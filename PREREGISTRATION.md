@@ -40,3 +40,13 @@ sampling but not training randomness. The spread of the three InceptionV3 seeds 
 without gates) is the yardstick: a difference between single-seed runs smaller than that
 spread is reported as not distinguishable from seed noise, whatever its CI says.
 
+## Addendum 2026-10-30, before any test result
+
+The first queued run was stopped at step 225 of 600. Its validation Dice looked fine (0.77),
+but background pixels sat at probability ~0.25 because the output bias started at 0 and
+Adam at 3e-4 moves it only ~0.07 in 225 steps. The output bias now starts at the tumour
+prior (log(0.02 / 0.98)), as in the focal-loss paper. A 90-step check reached validation
+Dice 0.853 with background probability 0.015. All runs restart from scratch with this
+initialisation; nothing else in the setup or hypotheses changed, and no test volume had
+been evaluated.
+
