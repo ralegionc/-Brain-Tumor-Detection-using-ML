@@ -1,0 +1,7 @@
+data/
+.cache/
+runs/*/last.pt
+runs/*/tmp.pt
+runs/*/final.pt
+__pycache__/
+.pytest_cache/

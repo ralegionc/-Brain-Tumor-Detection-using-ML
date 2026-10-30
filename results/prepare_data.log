@@ -1,0 +1,25 @@
+modalities: {'0': 'FLAIR', '1': 'T1w', '2': 't1gd', '3': 'T2w'} labels: {'0': 'background', '1': 'edema', '2': 'non-enhancing tumor', '3': 'enhancing tumour'}
+484 cases
+0 BRATS_001 train 125 slices
+25 BRATS_026 train 118 slices
+50 BRATS_051 train 123 slices
+75 BRATS_076 train 122 slices
+100 BRATS_101 train 117 slices
+125 BRATS_126 train 117 slices
+150 BRATS_151 train 131 slices
+175 BRATS_176 train 126 slices
+200 BRATS_201 train 115 slices
+225 BRATS_226 train 133 slices
+250 BRATS_251 train 133 slices
+275 BRATS_276 train 129 slices
+300 BRATS_301 test 119 slices
+325 BRATS_326 train 122 slices
+350 BRATS_351 train 112 slices
+375 BRATS_376 train 121 slices
+400 BRATS_401 test 120 slices
+425 BRATS_426 train 120 slices
+450 BRATS_451 train 116 slices
+475 BRATS_476 val 123 slices
+train 39176 slices, 314 cases
+val 6586 slices, 53 cases
+test 14529 slices, 117 cases
