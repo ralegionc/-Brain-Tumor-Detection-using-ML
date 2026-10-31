@@ -1,0 +1,15 @@
+{
+ "encoder": "inceptionv3",
+ "attention": false,
+ "loss": "dice_bce",
+ "seed": 0,
+ "steps": 600,
+ "batch": 16,
+ "lr": 0.0003,
+ "warmup": 30,
+ "threads": 8,
+ "ckpt_every": 25,
+ "val_every": 100,
+ "out": "",
+ "eval_limit": 0
+}
