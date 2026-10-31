@@ -1,0 +1,16 @@
+[A] inceptionv3_plain_dice_bce_s0
+[A] inceptionv3_ag_dice_bce_s0
+[A] vgg16_plain_dice_bce_s0
+[A] vgg16_ag_dice_bce_s0
+[A] vgg19_plain_dice_bce_s0
+[A] vgg19_ag_dice_bce_s0
+[B] inceptionv3_ag_bce_s0
+[B] inceptionv3_ag_dice_s0
+[B] inceptionv3_ag_focal_s0
+[B] inceptionv3_ag_tversky_s0
+[B] inceptionv3_ag_focal_tversky_s0
+[C] inceptionv3_plain_dice_bce_s1
+[C] inceptionv3_ag_dice_bce_s1
+[C] inceptionv3_plain_dice_bce_s2
+[C] inceptionv3_ag_dice_bce_s2
+queue complete
