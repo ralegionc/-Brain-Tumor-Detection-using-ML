@@ -1,0 +1,12 @@
+labels: {'0': 'background', '1': 'edema', '2': 'non-enhancing tumor', '3': 'enhancing tumour'}
+0 BRATS_001 train
+50 BRATS_051 train
+100 BRATS_101 train
+150 BRATS_151 train
+200 BRATS_201 train
+250 BRATS_251 train
+300 BRATS_301 test
+350 BRATS_351 train
+400 BRATS_401 test
+450 BRATS_451 train
+done; every whole-tumour row matched
