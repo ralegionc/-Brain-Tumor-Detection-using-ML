@@ -1,0 +1,19 @@
+[H4] threshold sweep
+[H5] msd-et_inceptionv3_plain_dice_bce_s0
+[H5] msd-et_inceptionv3_ag_dice_bce_s0
+[H5] msd-et_inceptionv3_plain_tversky_s0
+[H5] msd-et_inceptionv3_ag_tversky_s0
+[H5] msd-et_inceptionv3_plain_dice_bce_s1
+[H5] msd-et_inceptionv3_ag_dice_bce_s1
+[H6] lgg-wt_inceptionv3_plain_dice_bce_s0
+[H6] lgg-wt_inceptionv3_ag_dice_bce_s0
+[H6] lgg-wt_inceptionv3_plain_dice_bce_s1
+[H6] lgg-wt_inceptionv3_ag_dice_bce_s1
+[H6] lgg-wt_inceptionv3_plain_dice_bce_s2
+[H6] lgg-wt_inceptionv3_ag_dice_bce_s2
+[H7] inceptionv3_plain_dice_bce_s0_x2
+[H7] vgg16_plain_dice_bce_s1
+[H7] vgg16_ag_dice_bce_s1
+[H7] vgg16_plain_dice_bce_s2
+[H7] vgg16_ag_dice_bce_s2
+queue complete
