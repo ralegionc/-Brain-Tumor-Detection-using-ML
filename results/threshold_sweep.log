@@ -1,0 +1,18 @@
+predicting inceptionv3_ag_dice_bce_s0 val
+predicting inceptionv3_ag_dice_bce_s0 test
+predicting inceptionv3_ag_tversky_s0 val
+predicting inceptionv3_ag_tversky_s0 test
+validation: Tversky sensitivity 0.9319; Dice+BCE reaches it at t* = 43/255 = 0.169
+# H4: loss function vs threshold
+
+t* = 43/255 = 0.169, picked on validation, where Dice+BCE's mean sensitivity reaches Tversky's at 0.5 (0.932).
+
+| Test set (117 patients) | Dice | Sensitivity | Precision | median HD95 (mm) | mean distant FP (mL) |
+|---|---|---|---|---|---|
+| Dice+BCE at 0.5 | 0.871 | 0.861 | 0.890 | 3.64 | 0.59 |
+| Dice+BCE at t* = 0.17 | 0.864 | 0.908 | 0.831 | 4.37 | 1.16 |
+| Tversky at 0.5 | 0.863 | 0.910 | 0.826 | 4.61 | 1.54 |
+
+Paired Dice, Dice+BCE at t* minus Tversky: +0.0012 [-0.0018, +0.0040]; sensitivity gap -0.0024.
+
+**H4: THRESHOLD IS ENOUGH.**
