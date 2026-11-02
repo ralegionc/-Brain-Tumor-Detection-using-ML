@@ -109,3 +109,53 @@ patients have none, H6 uses the mean.
   the round 1 gap to VGG-16 plain seed 0, that is reaches 0.877 (InceptionV3 0.868, VGG-16 0.885).
 - The VGG-16 seed runs also give a three-seed check of H1 on VGG-16 (descriptive).
 
+## Round 3, written 2026-11-02 after round 2 results and before any round 3 code was run
+
+Round 2 left one gate effect standing in all four settings: fewer false alarms within 5 mm of
+the tumour. Round 3 asks what produces it (H8) and whether gates help when a model meets a
+different dataset (H9). Metrics, bootstrap and seed pooling are as in rounds 1 and 2.
+
+### H8, what the gates do at the tumour edge (no new training)
+
+Models: the six gated whole-tumour MSD models with Dice+BCE (InceptionV3 seeds 0-2, VGG-16
+seeds 0-2), each paired with its plain partner where a comparison needs one. Test set: the 117
+MSD test patients.
+
+Gate profile. Each gate map is upsampled to 128 px. On every slice that contains tumour,
+in-plane distance to the true tumour boundary is computed (1.75 mm pixels) and each brain pixel
+is binned: inside tumour (>5 mm, 0-5 mm from the edge), outside (0-5 mm, 5-15 mm, >15 mm), plus
+pixels outside the brain. Mean gate value per bin per patient.
+
+- **H8a.** The finest gate suppresses the band just outside the tumour: per patient, mean gate
+  value 0-5 mm outside the tumour minus mean gate value >15 mm from it is negative, with a CI
+  excluding 0, in all six models. Other gate levels are reported, not scored.
+
+Gate ablation. At test time every gate map is replaced by its own per-slice spatial mean, which
+keeps the overall scale of the skip features and removes where the gate looks.
+
+- **H8b.** Spatial gating causes the tighter edge: false-positive volume within 5 mm of the
+  tumour rises under ablation (per-patient change, ablated minus intact, pooled over the three
+  seeds, CI excludes 0) for both encoders. If ablation lowers an encoder's mean Dice by more
+  than 0.05, H8b is scored uninterpretable for that encoder (the network is broken, not
+  un-gated).
+- Descriptive only: ablating one gate level at a time and setting all gates to 1, on seed 0 of
+  each encoder; distant false alarms and Dice under every ablation.
+
+### H9, gates across datasets
+
+Models: InceptionV3 {plain, gates} x seeds {0, 1, 2}, Dice+BCE, 600 steps, trained on MSD exactly
+as in round 1 except for the input channels, which are pre-contrast T1, FLAIR and post-contrast
+T1 (T1gd) to match the LGG set. Test: all 110 LGG patients (none were seen in training), each
+slice rotated 90 degrees to MSD orientation, with the LGG preprocessing of round 2 (z-score over
+the whole head, skull and scalp kept). Predictions are rotated back and scored against the LGG
+masks at the nominal LGG voxel size.
+
+- **H9a.** Gates cut distant false alarms on the unseen dataset: seed-pooled mean per-patient
+  change (gates minus plain) is negative with a CI excluding 0, and negative for every seed.
+- **H9b.** Gates raise seed-pooled mean Dice on the unseen dataset by at least 0.01.
+- Sensitivity analysis: both repeated without the 12 LGG patients whose pre- or post-contrast
+  T1 was replaced by a copy of FLAIR in the source data.
+- Descriptive only: the cost of the dataset shift (MSD-trained vs the round 2 LGG-trained models
+  on the same 33 LGG test patients), the reverse direction (LGG-trained models on the 117 MSD
+  test patients, rotated the other way), and the new MSD models' in-domain Dice against round 1.
+

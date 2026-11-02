@@ -1,0 +1,21 @@
+484 cases, 0 already done
+25 BRATS_410 test 127 slices, worst FLAIR diff 0.0
+50 BRATS_142 train 133 slices, worst FLAIR diff 0.0
+75 BRATS_131 train 131 slices, worst FLAIR diff 0.0
+100 BRATS_436 test 127 slices, worst FLAIR diff 0.0
+125 BRATS_471 val 135 slices, worst FLAIR diff 0.0
+150 BRATS_390 train 125 slices, worst FLAIR diff 0.0
+175 BRATS_263 test 124 slices, worst FLAIR diff 0.0
+200 BRATS_477 val 126 slices, worst FLAIR diff 0.0
+225 BRATS_113 test 126 slices, worst FLAIR diff 0.0
+250 BRATS_067 train 120 slices, worst FLAIR diff 0.0
+275 BRATS_472 train 124 slices, worst FLAIR diff 0.0
+300 BRATS_276 train 129 slices, worst FLAIR diff 0.0
+325 BRATS_317 train 116 slices, worst FLAIR diff 0.0
+350 BRATS_169 train 133 slices, worst FLAIR diff 0.0
+375 BRATS_433 val 121 slices, worst FLAIR diff 0.0
+400 BRATS_329 val 120 slices, worst FLAIR diff 0.0
+425 BRATS_102 train 133 slices, worst FLAIR diff 0.0
+450 BRATS_012 train 124 slices, worst FLAIR diff 0.0
+475 BRATS_468 train 129 slices, worst FLAIR diff 0.0
+finished 484 of 484 cases; worst FLAIR diff 0.0
