@@ -1,0 +1,176 @@
+[{"stream_name":"stdout","time":2.251458427,"data":"Tue Nov  3 04:04:20 2026       \n"}
+,{"stream_name":"stdout","time":2.251508975,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":2.2515149230000002,"data":"| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |\n"}
+,{"stream_name":"stdout","time":2.251518815,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":2.251522495,"data":"| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n"}
+,{"stream_name":"stdout","time":2.251526161,"data":"| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n"}
+,{"stream_name":"stdout","time":2.251529825,"data":"|                                         |                        |               MIG M. |\n"}
+,{"stream_name":"stdout","time":2.251533686,"data":"|=========================================+========================+======================|\n"}
+,{"stream_name":"stdout","time":2.31158088,"data":"|   0  Tesla T4                       Off |   00000000:00:04.0 Off |                    0 |\n"}
+,{"stream_name":"stdout","time":2.311601165,"data":"| N/A   42C    P8             10W /   70W |       0MiB /  15360MiB |      0%      Default |\n"}
+,{"stream_name":"stdout","time":2.311605752,"data":"|                                         |                        |                  N/A |\n"}
+,{"stream_name":"stdout","time":2.311609546,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":2.311613487,"data":"|   1  Tesla T4                       Off |   00000000:00:05.0 Off |                    0 |\n"}
+,{"stream_name":"stdout","time":2.311617158,"data":"| N/A   42C    P8              9W /   70W |       0MiB /  15360MiB |      0%      Default |\n"}
+,{"stream_name":"stdout","time":2.311620885,"data":"|                                         |                        |                  N/A |\n"}
+,{"stream_name":"stdout","time":2.311624674,"data":"+-----------------------------------------+------------------------+----------------------+\n"}
+,{"stream_name":"stdout","time":2.312173205,"data":"\n"}
+,{"stream_name":"stdout","time":2.312192946,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":2.312197581,"data":"| Processes:                                                                              |\n"}
+,{"stream_name":"stdout","time":2.312202426,"data":"|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n"}
+,{"stream_name":"stdout","time":2.312207083,"data":"|        ID   ID                                                               Usage      |\n"}
+,{"stream_name":"stdout","time":2.31221194,"data":"|=========================================================================================|\n"}
+,{"stream_name":"stdout","time":2.313719302,"data":"|  No running processes found                                                             |\n"}
+,{"stream_name":"stdout","time":2.313730849,"data":"+-----------------------------------------------------------------------------------------+\n"}
+,{"stream_name":"stdout","time":2.645818483,"data":"[gpu0] start r4_vgg16_plain_dice_bce_s0\n"}
+,{"stream_name":"stdout","time":2.645845678,"data":"[gpu1] start r4_vgg16_ag_dice_bce_s0\n"}
+,{"stream_name":"stdout","time":2894.415986582,"data":"[gpu0] r4_vgg16_plain_dice_bce_s0 exit 0 after 48.2 min\n"}
+,{"stream_name":"stdout","time":2894.416046191,"data":"    eval 80 BRATS_374 dice=0.884 hd95=2.7\n"}
+,{"stream_name":"stdout","time":2894.416081373,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":2894.416088373,"data":"  r4_vgg16_plain_dice_bce_s0 test dice mean 0.9043 median hd95 2.67\n"}
+,{"stream_name":"stdout","time":2927.924812455,"data":"r4_vgg16_plain_dice_bce_s0 val 53 patients\n"}
+,{"stream_name":"stdout","time":2980.161551041,"data":"r4_vgg16_plain_dice_bce_s0 test 117 patients\n"}
+,{"stream_name":"stdout","time":2981.245793321,"data":"[gpu0] start r4_vgg16_plain_dice_bce_s1\n"}
+,{"stream_name":"stdout","time":3314.175732389,"data":"[gpu1] r4_vgg16_ag_dice_bce_s0 exit 0 after 55.2 min\n"}
+,{"stream_name":"stdout","time":3314.175770584,"data":"    eval 80 BRATS_374 dice=0.898 hd95=2.7\n"}
+,{"stream_name":"stdout","time":3314.175775877,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":3314.175780393,"data":"  r4_vgg16_ag_dice_bce_s0 test dice mean 0.9034 median hd95 2.66\n"}
+,{"stream_name":"stdout","time":3358.190055466,"data":"r4_vgg16_ag_dice_bce_s0 val 53 patients\n"}
+,{"stream_name":"stdout","time":3419.106764802,"data":"r4_vgg16_ag_dice_bce_s0 test 117 patients\n"}
+,{"stream_name":"stdout","time":3420.123058879,"data":"[gpu1] start r4_vgg16_ag_dice_bce_s1\n"}
+,{"stream_name":"stdout","time":5678.154138966,"data":"[gpu0] r4_vgg16_plain_dice_bce_s1 exit 0 after 44.9 min\n"}
+,{"stream_name":"stdout","time":5678.154183339,"data":"    eval 80 BRATS_374 dice=0.887 hd95=2.7\n"}
+,{"stream_name":"stdout","time":5678.15418875,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":5678.154193286,"data":"  r4_vgg16_plain_dice_bce_s1 test dice mean 0.9037 median hd95 3.0\n"}
+,{"stream_name":"stdout","time":5708.032750379,"data":"r4_vgg16_plain_dice_bce_s1 val 53 patients\n"}
+,{"stream_name":"stdout","time":5760.411275264,"data":"r4_vgg16_plain_dice_bce_s1 test 117 patients\n"}
+,{"stream_name":"stdout","time":5761.44287874,"data":"[gpu0] start r4_vgg16_plain_dice_bce_s2\n"}
+,{"stream_name":"stdout","time":6560.542547301,"data":"[gpu1] r4_vgg16_ag_dice_bce_s1 exit 0 after 52.3 min\n"}
+,{"stream_name":"stdout","time":6560.542580692,"data":"    eval 80 BRATS_374 dice=0.886 hd95=2.7\n"}
+,{"stream_name":"stdout","time":6560.542586432,"data":"    eval 100 BRATS_435 dice=0.942 hd95=2.0\n"}
+,{"stream_name":"stdout","time":6560.542590772,"data":"  r4_vgg16_ag_dice_bce_s1 test dice mean 0.9032 median hd95 2.67\n"}
+,{"stream_name":"stdout","time":6594.088344772,"data":"r4_vgg16_ag_dice_bce_s1 val 53 patients\n"}
+,{"stream_name":"stdout","time":6654.777927922,"data":"r4_vgg16_ag_dice_bce_s1 test 117 patients\n"}
+,{"stream_name":"stdout","time":6655.736817034,"data":"[gpu1] start r4_vgg16_ag_dice_bce_s2\n"}
+,{"stream_name":"stdout","time":8457.155904682,"data":"[gpu0] r4_vgg16_plain_dice_bce_s2 exit 0 after 44.9 min\n"}
+,{"stream_name":"stdout","time":8457.155939747,"data":"    eval 80 BRATS_374 dice=0.896 hd95=2.7\n"}
+,{"stream_name":"stdout","time":8457.155944682,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":8457.155948456,"data":"  r4_vgg16_plain_dice_bce_s2 test dice mean 0.9034 median hd95 2.67\n"}
+,{"stream_name":"stdout","time":8486.928698258,"data":"r4_vgg16_plain_dice_bce_s2 val 53 patients\n"}
+,{"stream_name":"stdout","time":8539.254841957,"data":"r4_vgg16_plain_dice_bce_s2 test 117 patients\n"}
+,{"stream_name":"stdout","time":8540.233874569,"data":"[gpu0] start r4_vgg16_plain_tversky_s0\n"}
+,{"stream_name":"stdout","time":9796.158511612,"data":"[gpu1] r4_vgg16_ag_dice_bce_s2 exit 0 after 52.3 min\n"}
+,{"stream_name":"stdout","time":9796.158558116,"data":"    eval 80 BRATS_374 dice=0.885 hd95=2.7\n"}
+,{"stream_name":"stdout","time":9796.158577297,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":9796.15858167,"data":"  r4_vgg16_ag_dice_bce_s2 test dice mean 0.9029 median hd95 2.67\n"}
+,{"stream_name":"stdout","time":9829.719517214,"data":"r4_vgg16_ag_dice_bce_s2 val 53 patients\n"}
+,{"stream_name":"stdout","time":9890.59916928,"data":"r4_vgg16_ag_dice_bce_s2 test 117 patients\n"}
+,{"stream_name":"stdout","time":9891.722151772,"data":"[gpu1] start r4_vgg16_plain_tversky_s1\n"}
+,{"stream_name":"stdout","time":11242.81730414,"data":"[gpu0] r4_vgg16_plain_tversky_s0 exit 0 after 45.0 min\n"}
+,{"stream_name":"stdout","time":11242.817340166,"data":"    eval 80 BRATS_374 dice=0.874 hd95=4.4\n"}
+,{"stream_name":"stdout","time":11242.817344893,"data":"    eval 100 BRATS_435 dice=0.932 hd95=2.5\n"}
+,{"stream_name":"stdout","time":11242.817348836,"data":"  r4_vgg16_plain_tversky_s0 test dice mean 0.898 median hd95 3.4\n"}
+,{"stream_name":"stdout","time":11272.655404966,"data":"r4_vgg16_plain_tversky_s0 val 53 patients\n"}
+,{"stream_name":"stdout","time":11325.122610364,"data":"r4_vgg16_plain_tversky_s0 test 117 patients\n"}
+,{"stream_name":"stdout","time":11326.10181325,"data":"[gpu0] start r4_vgg16_plain_tversky_s2\n"}
+,{"stream_name":"stdout","time":12665.585996062,"data":"[gpu1] r4_vgg16_plain_tversky_s1 exit 0 after 46.2 min\n"}
+,{"stream_name":"stdout","time":12665.586035799,"data":"    eval 80 BRATS_374 dice=0.875 hd95=4.0\n"}
+,{"stream_name":"stdout","time":12665.58604236,"data":"    eval 100 BRATS_435 dice=0.934 hd95=2.7\n"}
+,{"stream_name":"stdout","time":12665.586047462,"data":"  r4_vgg16_plain_tversky_s1 test dice mean 0.8971 median hd95 3.47\n"}
+,{"stream_name":"stdout","time":12696.464392259,"data":"r4_vgg16_plain_tversky_s1 val 53 patients\n"}
+,{"stream_name":"stdout","time":12750.496732673,"data":"r4_vgg16_plain_tversky_s1 test 117 patients\n"}
+,{"stream_name":"stdout","time":12751.608841676,"data":"[gpu1] start r4_inceptionv3_plain_dice_bce_s0\n"}
+,{"stream_name":"stdout","time":14042.567723956,"data":"[gpu0] r4_vgg16_plain_tversky_s2 exit 0 after 45.3 min\n"}
+,{"stream_name":"stdout","time":14042.567766219,"data":"    eval 80 BRATS_374 dice=0.873 hd95=4.4\n"}
+,{"stream_name":"stdout","time":14042.567773406,"data":"    eval 100 BRATS_435 dice=0.935 hd95=2.5\n"}
+,{"stream_name":"stdout","time":14042.567779268,"data":"  r4_vgg16_plain_tversky_s2 test dice mean 0.8982 median hd95 3.47\n"}
+,{"stream_name":"stdout","time":14073.137943012,"data":"r4_vgg16_plain_tversky_s2 val 53 patients\n"}
+,{"stream_name":"stdout","time":14125.928576428,"data":"r4_vgg16_plain_tversky_s2 test 117 patients\n"}
+,{"stream_name":"stdout","time":14126.985678063,"data":"[gpu0] start r4_inceptionv3_plain_dice_bce_s1\n"}
+,{"stream_name":"stdout","time":14857.171817076,"data":"[gpu1] r4_inceptionv3_plain_dice_bce_s0 exit 0 after 35.1 min\n"}
+,{"stream_name":"stdout","time":14857.171860103,"data":"    eval 80 BRATS_374 dice=0.892 hd95=2.5\n"}
+,{"stream_name":"stdout","time":14857.171864286,"data":"    eval 100 BRATS_435 dice=0.935 hd95=2.6\n"}
+,{"stream_name":"stdout","time":14857.171868502,"data":"  r4_inceptionv3_plain_dice_bce_s0 test dice mean 0.8975 median hd95 3.0\n"}
+,{"stream_name":"stdout","time":14875.346679741,"data":"r4_inceptionv3_plain_dice_bce_s0 val 53 patients\n"}
+,{"stream_name":"stdout","time":14903.803807668,"data":"r4_inceptionv3_plain_dice_bce_s0 test 117 patients\n"}
+,{"stream_name":"stdout","time":14904.804588561,"data":"[gpu1] start r4_inceptionv3_plain_dice_bce_s2\n"}
+,{"stream_name":"stdout","time":16173.220573618,"data":"[gpu0] r4_inceptionv3_plain_dice_bce_s1 exit 0 after 34.1 min\n"}
+,{"stream_name":"stdout","time":16173.220641816,"data":"    eval 80 BRATS_374 dice=0.887 hd95=2.5\n"}
+,{"stream_name":"stdout","time":16173.220647649,"data":"    eval 100 BRATS_435 dice=0.938 hd95=2.0\n"}
+,{"stream_name":"stdout","time":16173.220651971,"data":"  r4_inceptionv3_plain_dice_bce_s1 test dice mean 0.896 median hd95 3.18\n"}
+,{"stream_name":"stdout","time":16191.342089854,"data":"r4_inceptionv3_plain_dice_bce_s1 val 53 patients\n"}
+,{"stream_name":"stdout","time":16219.167355799,"data":"r4_inceptionv3_plain_dice_bce_s1 test 117 patients\n"}
+,{"stream_name":"stdout","time":16220.164482189,"data":"[gpu0] start r4_inceptionv3_plain_dice_bce_s0_x2\n"}
+,{"stream_name":"stdout","time":16922.572048742,"data":"[gpu1] r4_inceptionv3_plain_dice_bce_s2 exit 0 after 33.6 min\n"}
+,{"stream_name":"stdout","time":16922.572101225,"data":"    eval 80 BRATS_374 dice=0.854 hd95=127.4\n"}
+,{"stream_name":"stdout","time":16922.572106878,"data":"    eval 100 BRATS_435 dice=0.910 hd95=95.1\n"}
+,{"stream_name":"stdout","time":16922.572111546,"data":"  r4_inceptionv3_plain_dice_bce_s2 test dice mean 0.8827 median hd95 4.61\n"}
+,{"stream_name":"stdout","time":16940.42659675,"data":"r4_inceptionv3_plain_dice_bce_s2 val 53 patients\n"}
+,{"stream_name":"stdout","time":16968.562133852,"data":"r4_inceptionv3_plain_dice_bce_s2 test 117 patients\n"}
+,{"stream_name":"stdout","time":16969.530632111,"data":"[gpu1] start r4_inceptionv3_plain_dice_bce_s1_x2\n"}
+,{"stream_name":"stdout","time":20162.980624087,"data":"[gpu0] r4_inceptionv3_plain_dice_bce_s0_x2 exit 0 after 65.7 min\n"}
+,{"stream_name":"stdout","time":20162.980662262,"data":"    eval 80 BRATS_374 dice=0.894 hd95=2.5\n"}
+,{"stream_name":"stdout","time":20162.980668854,"data":"    eval 100 BRATS_435 dice=0.945 hd95=2.0\n"}
+,{"stream_name":"stdout","time":20162.980674087,"data":"  r4_inceptionv3_plain_dice_bce_s0_x2 test dice mean 0.9047 median hd95 3.0\n"}
+,{"stream_name":"stdout","time":20205.558697914,"data":"r4_inceptionv3_plain_dice_bce_s0_x2 val 53 patients\n"}
+,{"stream_name":"stdout","time":20288.371803839,"data":"r4_inceptionv3_plain_dice_bce_s0_x2 test 117 patients\n"}
+,{"stream_name":"stdout","time":20289.381967954,"data":"[gpu0] start r4_inceptionv3_plain_dice_bce_s2_x2\n"}
+,{"stream_name":"stdout","time":20983.203476929,"data":"[gpu1] r4_inceptionv3_plain_dice_bce_s1_x2 exit 0 after 66.9 min\n"}
+,{"stream_name":"stdout","time":20983.203520601,"data":"    eval 80 BRATS_374 dice=0.884 hd95=2.7\n"}
+,{"stream_name":"stdout","time":20983.203526463,"data":"    eval 100 BRATS_435 dice=0.942 hd95=2.0\n"}
+,{"stream_name":"stdout","time":20983.203544159,"data":"  r4_inceptionv3_plain_dice_bce_s1_x2 test dice mean 0.902 median hd95 3.0\n"}
+,{"stream_name":"stdout","time":21026.715753075,"data":"r4_inceptionv3_plain_dice_bce_s1_x2 val 53 patients\n"}
+,{"stream_name":"stdout","time":21112.372386208,"data":"r4_inceptionv3_plain_dice_bce_s1_x2 test 117 patients\n"}
+,{"stream_name":"stdout","time":21113.409844709,"data":"[gpu1] start r4_inceptionv3_ag_dice_bce_s0_x2\n"}
+,{"stream_name":"stdout","time":24228.848859816,"data":"[gpu0] r4_inceptionv3_plain_dice_bce_s2_x2 exit 0 after 65.7 min\n"}
+,{"stream_name":"stdout","time":24228.848909698,"data":"    eval 80 BRATS_374 dice=0.888 hd95=2.7\n"}
+,{"stream_name":"stdout","time":24228.848919336,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":24228.848922591,"data":"  r4_inceptionv3_plain_dice_bce_s2_x2 test dice mean 0.9021 median hd95 3.0\n"}
+,{"stream_name":"stdout","time":24271.46882785,"data":"r4_inceptionv3_plain_dice_bce_s2_x2 val 53 patients\n"}
+,{"stream_name":"stdout","time":24354.328382871,"data":"r4_inceptionv3_plain_dice_bce_s2_x2 test 117 patients\n"}
+,{"stream_name":"stdout","time":24355.358847182,"data":"[gpu0] start r4_inceptionv3_ag_dice_bce_s1_x2\n"}
+,{"stream_name":"stdout","time":25641.072234344,"data":"[gpu1] r4_inceptionv3_ag_dice_bce_s0_x2 exit 0 after 75.5 min\n"}
+,{"stream_name":"stdout","time":25641.072283215,"data":"    eval 80 BRATS_374 dice=0.893 hd95=2.6\n"}
+,{"stream_name":"stdout","time":25641.072290861,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":25641.072296764,"data":"  r4_inceptionv3_ag_dice_bce_s0_x2 test dice mean 0.9035 median hd95 2.67\n"}
+,{"stream_name":"stdout","time":25689.558214773,"data":"r4_inceptionv3_ag_dice_bce_s0_x2 val 53 patients\n"}
+,{"stream_name":"stdout","time":25784.314614934,"data":"r4_inceptionv3_ag_dice_bce_s0_x2 test 117 patients\n"}
+,{"stream_name":"stdout","time":25785.40373276,"data":"[gpu1] start r4_inceptionv3_ag_dice_bce_s2_x2\n"}
+,{"stream_name":"stdout","time":28844.612821994,"data":"[gpu0] r4_inceptionv3_ag_dice_bce_s1_x2 exit 0 after 74.8 min\n"}
+,{"stream_name":"stdout","time":28844.612866828,"data":"    eval 80 BRATS_374 dice=0.896 hd95=2.7\n"}
+,{"stream_name":"stdout","time":28844.612874622,"data":"    eval 100 BRATS_435 dice=0.943 hd95=2.0\n"}
+,{"stream_name":"stdout","time":28844.612880124,"data":"  r4_inceptionv3_ag_dice_bce_s1_x2 test dice mean 0.904 median hd95 2.67\n"}
+,{"stream_name":"stdout","time":28891.481796264,"data":"r4_inceptionv3_ag_dice_bce_s1_x2 val 53 patients\n"}
+,{"stream_name":"stdout","time":28983.400389136,"data":"r4_inceptionv3_ag_dice_bce_s1_x2 test 117 patients\n"}
+,{"stream_name":"stdout","time":30321.396703885,"data":"[gpu1] r4_inceptionv3_ag_dice_bce_s2_x2 exit 0 after 75.6 min\n"}
+,{"stream_name":"stdout","time":30321.396743593,"data":"    eval 80 BRATS_374 dice=0.888 hd95=2.7\n"}
+,{"stream_name":"stdout","time":30321.396767939,"data":"    eval 100 BRATS_435 dice=0.942 hd95=2.0\n"}
+,{"stream_name":"stdout","time":30321.396771805,"data":"  r4_inceptionv3_ag_dice_bce_s2_x2 test dice mean 0.9037 median hd95 2.66\n"}
+,{"stream_name":"stdout","time":30369.436444181,"data":"r4_inceptionv3_ag_dice_bce_s2_x2 val 53 patients\n"}
+,{"stream_name":"stdout","time":30463.659815034,"data":"r4_inceptionv3_ag_dice_bce_s2_x2 test 117 patients\n"}
+,{"stream_name":"stdout","time":30464.645380663,"data":"finished 18 runs in 8.46 h:\n"}
+,{"stream_name":"stdout","time":30464.64542476,"data":"  r4_inceptionv3_ag_dice_bce_s0_x2\n"}
+,{"stream_name":"stdout","time":30464.645431932,"data":"  r4_inceptionv3_ag_dice_bce_s1_x2\n"}
+,{"stream_name":"stdout","time":30464.645436967,"data":"  r4_inceptionv3_ag_dice_bce_s2_x2\n"}
+,{"stream_name":"stdout","time":30464.645441816,"data":"  r4_inceptionv3_plain_dice_bce_s0\n"}
+,{"stream_name":"stdout","time":30464.645446683,"data":"  r4_inceptionv3_plain_dice_bce_s0_x2\n"}
+,{"stream_name":"stdout","time":30464.645451467,"data":"  r4_inceptionv3_plain_dice_bce_s1\n"}
+,{"stream_name":"stdout","time":30464.645456208,"data":"  r4_inceptionv3_plain_dice_bce_s1_x2\n"}
+,{"stream_name":"stdout","time":30464.645465671,"data":"  r4_inceptionv3_plain_dice_bce_s2\n"}
+,{"stream_name":"stdout","time":30464.645469378,"data":"  r4_inceptionv3_plain_dice_bce_s2_x2\n"}
+,{"stream_name":"stdout","time":30464.645472648,"data":"  r4_vgg16_ag_dice_bce_s0\n"}
+,{"stream_name":"stdout","time":30464.645475813,"data":"  r4_vgg16_ag_dice_bce_s1\n"}
+,{"stream_name":"stdout","time":30464.645478978,"data":"  r4_vgg16_ag_dice_bce_s2\n"}
+,{"stream_name":"stdout","time":30464.645482715,"data":"  r4_vgg16_plain_dice_bce_s0\n"}
+,{"stream_name":"stdout","time":30464.645499481,"data":"  r4_vgg16_plain_dice_bce_s1\n"}
+,{"stream_name":"stdout","time":30464.645505236,"data":"  r4_vgg16_plain_dice_bce_s2\n"}
+,{"stream_name":"stdout","time":30464.645510679,"data":"  r4_vgg16_plain_tversky_s0\n"}
+,{"stream_name":"stdout","time":30464.645529826,"data":"  r4_vgg16_plain_tversky_s1\n"}
+,{"stream_name":"stdout","time":30464.645533939,"data":"  r4_vgg16_plain_tversky_s2\n"}
+,{"stream_name":"stderr","time":30467.192182748,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":30467.192212695,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":30467.528370468,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":30467.52839576,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":30468.545331334,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":30469.685220982,"data":"[NbConvertApp] Writing 302183 bytes to __results__.html\n"}
+]

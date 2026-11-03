@@ -1,0 +1,12 @@
+msd3-wt_inceptionv3_plain_dice_bce_s0 lgg_all_metrics.csv dice 0.5288 distant FP 45.524
+msd3-wt_inceptionv3_ag_dice_bce_s0 lgg_all_metrics.csv dice 0.5338 distant FP 36.752
+msd3-wt_inceptionv3_plain_dice_bce_s1 lgg_all_metrics.csv dice 0.4853 distant FP 49.741
+msd3-wt_inceptionv3_ag_dice_bce_s1 lgg_all_metrics.csv dice 0.4998 distant FP 30.163
+msd3-wt_inceptionv3_plain_dice_bce_s2 lgg_all_metrics.csv dice 0.5241 distant FP 36.628
+msd3-wt_inceptionv3_ag_dice_bce_s2 lgg_all_metrics.csv dice 0.5102 distant FP 33.775
+lgg-wt_inceptionv3_plain_dice_bce_s0 msd_test_metrics.csv dice 0.4522 distant FP 0.604
+lgg-wt_inceptionv3_ag_dice_bce_s0 msd_test_metrics.csv dice 0.5630 distant FP 0.699
+lgg-wt_inceptionv3_plain_dice_bce_s1 msd_test_metrics.csv dice 0.4943 distant FP 3.873
+lgg-wt_inceptionv3_ag_dice_bce_s1 msd_test_metrics.csv dice 0.4959 distant FP 1.316
+lgg-wt_inceptionv3_plain_dice_bce_s2 msd_test_metrics.csv dice 0.4840 distant FP 0.835
+lgg-wt_inceptionv3_ag_dice_bce_s2 msd_test_metrics.csv dice 0.4311 distant FP 0.746

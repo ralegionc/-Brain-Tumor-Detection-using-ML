@@ -1,0 +1,21 @@
+{
+ "encoder": "inceptionv3",
+ "attention": false,
+ "loss": "dice_bce",
+ "seed": 1,
+ "data": "msd",
+ "target": "wt",
+ "in_scale": 1,
+ "steps": 24500,
+ "batch": 16,
+ "lr": 0.0003,
+ "warmup": 300,
+ "threads": 2,
+ "ckpt_every": 1000,
+ "val_every": 1000,
+ "out": "runs/r4_inceptionv3_plain_dice_bce_s1",
+ "eval_limit": 0,
+ "eval_only": false,
+ "amp": true,
+ "ram": true
+}
