@@ -1,0 +1,44 @@
+inceptionv3_ag_dice_bce_s0 intact
+  dice 0.8711 boundary FP 8.559 distant FP 0.587
+inceptionv3_ag_dice_bce_s0 mean
+  dice 0.7947 boundary FP 3.393 distant FP 0.204
+inceptionv3_ag_dice_bce_s0 mean_L1
+  dice 0.7650 boundary FP 4.253 distant FP 0.231
+inceptionv3_ag_dice_bce_s0 mean_L2
+  dice 0.8621 boundary FP 8.245 distant FP 0.506
+inceptionv3_ag_dice_bce_s0 mean_L3
+  dice 0.8711 boundary FP 8.482 distant FP 0.581
+inceptionv3_ag_dice_bce_s0 mean_L4
+  dice 0.8711 boundary FP 8.561 distant FP 0.588
+inceptionv3_ag_dice_bce_s0 ones
+  dice 0.8645 boundary FP 6.846 distant FP 0.639
+inceptionv3_ag_dice_bce_s1 intact
+  dice 0.8627 boundary FP 8.858 distant FP 0.560
+inceptionv3_ag_dice_bce_s1 mean
+  dice 0.6544 boundary FP 2.119 distant FP 0.085
+inceptionv3_ag_dice_bce_s2 intact
+  dice 0.8701 boundary FP 8.568 distant FP 0.681
+inceptionv3_ag_dice_bce_s2 mean
+  dice 0.8530 boundary FP 9.744 distant FP 0.538
+vgg16_ag_dice_bce_s0 intact
+  dice 0.8824 boundary FP 7.583 distant FP 0.854
+vgg16_ag_dice_bce_s0 mean
+  dice 0.8272 boundary FP 2.217 distant FP 0.263
+vgg16_ag_dice_bce_s0 mean_L1
+  dice 0.8677 boundary FP 5.265 distant FP 0.552
+vgg16_ag_dice_bce_s0 mean_L2
+  dice 0.8785 boundary FP 6.544 distant FP 0.687
+vgg16_ag_dice_bce_s0 mean_L3
+  dice 0.8819 boundary FP 7.111 distant FP 0.792
+vgg16_ag_dice_bce_s0 mean_L4
+  dice 0.8801 boundary FP 6.037 distant FP 0.705
+vgg16_ag_dice_bce_s0 ones
+  dice 0.8765 boundary FP 9.545 distant FP 2.794
+vgg16_ag_dice_bce_s1 intact
+  dice 0.8832 boundary FP 7.794 distant FP 0.805
+vgg16_ag_dice_bce_s1 mean
+  dice 0.8476 boundary FP 2.875 distant FP 0.268
+vgg16_ag_dice_bce_s2 intact
+  dice 0.8869 boundary FP 7.465 distant FP 0.844
+vgg16_ag_dice_bce_s2 mean
+  dice 0.8683 boundary FP 4.171 distant FP 0.415

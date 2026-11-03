@@ -1,0 +1,10 @@
+[H9] msd3-wt_inceptionv3_plain_dice_bce_s0
+[H9] msd3-wt_inceptionv3_ag_dice_bce_s0
+[H9] msd3-wt_inceptionv3_plain_dice_bce_s1
+[H9] msd3-wt_inceptionv3_ag_dice_bce_s1
+[H9] msd3-wt_inceptionv3_plain_dice_bce_s2
+[H9] msd3-wt_inceptionv3_ag_dice_bce_s2
+[H9] msd3-wt_inceptionv3_ag_dice_bce_s2
+[H9] cross_eval
+[H8] gate_probe
+queue complete
