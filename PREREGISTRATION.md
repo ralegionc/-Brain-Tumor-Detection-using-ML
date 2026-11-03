@@ -159,3 +159,44 @@ masks at the nominal LGG voxel size.
   on the same 33 LGG test patients), the reverse direction (LGG-trained models on the 117 MSD
   test patients, rotated the other way), and the new MSD models' in-domain Dice against round 1.
 
+## Round 4, written 2026-11-02 before any round 4 training
+
+Every model so far trained for 600 steps of batch 16, about a quarter of an epoch, on a CPU.
+Round 4 asks whether the main conclusions survive about 40 times that budget, on a Kaggle GPU.
+
+Recipe: identical to round 1 (MSD whole tumour, FLAIR/T1gd/T2w, same slices and split, same
+augmentation, AdamW 3e-4, cosine decay, batch 16, final weights, no checkpoint picking) except
+24,500 steps (10 epochs), 300 warmup steps, and fp16 autocast with the loss in fp32. The slice
+arrays are rebuilt on Kaggle from the same MSD tar and checked against SHA-256 hashes of the
+local arrays before training. Run order, which is also the drop order if GPU time runs out
+(runs are dropped from the end; hypotheses that lose a run are reported as not run):
+
+1. VGG-16 {plain, gates} x seeds {0, 1, 2}, Dice+BCE
+2. VGG-16 plain, Tversky, seeds {0, 1, 2}
+3. InceptionV3 plain, Dice+BCE, seeds {0, 1, 2}
+4. InceptionV3 with 2x input, plain, Dice+BCE, seeds {0, 1, 2}
+5. InceptionV3 with 2x input, gates, Dice+BCE, seeds {0, 1, 2}
+
+Each hypothesis is scored as in rounds 1 and 2 (per-patient paired differences, seed-pooled,
+5,000-sample bootstrap), on the 117 MSD test patients.
+
+- **H10a.** Gates raise seed-pooled mean Dice by at least 0.01. Scored separately for VGG-16 and
+  for InceptionV3 at 2x input.
+- **H10b.** Gates cut mean distant (>5 mm) false-positive volume: seed-pooled CI excludes 0 and
+  every seed's mean change is negative. Scored per encoder as H10a.
+- **H10c.** Gates cut mean false-positive volume within 5 mm of the tumour: seed-pooled CI
+  excludes 0. (Exploratory in rounds 1 and 2, where it held in all four settings; now fixed in
+  advance.) Scored per encoder.
+- **H11.** A lower threshold buys what Tversky buys. Per seed, t* is the highest threshold on a
+  1/255 grid at which VGG-16 plain Dice+BCE reaches, on the validation set, the mean sensitivity
+  of VGG-16 plain Tversky at 0.5. On the test set the seed-pooled paired Dice difference
+  (Dice+BCE at t* minus Tversky at 0.5) and mean sensitivity gap decide: "threshold is enough" if
+  the CI lower bound is above -0.005 and the sensitivity gap is within 0.01; "Tversky adds
+  something" if the CI upper bound is below 0; otherwise inconclusive. Metrics come from
+  per-patient probability histograms (256 bins), as in H4.
+- **H12a.** VGG-16 beats InceptionV3 at 1x: seed-averaged per-patient Dice difference (plain
+  models) has a CI excluding 0.
+- **H12b.** Input size explains the gap: InceptionV3 at 2x input closes at least half of the
+  VGG-16 minus InceptionV3 1x gap in seed-mean Dice (plain models).
+- Descriptive only: how much every configuration gains from the longer schedule, against its
+  round 1 or 2 counterpart.
