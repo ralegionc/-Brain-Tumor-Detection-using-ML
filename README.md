@@ -15,14 +15,19 @@ Tversky is just a lower threshold, whether gates help on a harder sub-region or 
 the skull left in, and why VGG beat InceptionV3 ([Round 2](#round-2-four-follow-up-questions)).
 [Round 3](#round-3-what-the-gates-do-and-a-dataset-shift) looked inside the gates and tested a
 shift between datasets, and [Round 4](#round-4-the-full-budget-rerun) reran the main comparisons
-with 40 times the training on a GPU.
+with 40 times the training on a GPU. [Round 5](#round-5-budget-less-data-calibration-and-cheap-gains)
+traced the gate effect across training budgets and smaller training sets, checked calibration,
+tested whether the models can flag their own failures, and tried four cheap accuracy gains.
 
 **In one paragraph:** attention gates never improved Dice. At short training they trimmed false
 alarms at the tumour edge, and under a shift between datasets they cut stray false alarms by
 10 mL per patient, but the edge effect disappears with full training. Inside the network the
 gates act as a spotlight on the tumour region. Tversky and other imbalance losses are a
 threshold in disguise. The VGG vs InceptionV3 gap is an input-size effect. Training budget
-mattered more than any of these choices.
+mattered more than any of these choices. Gates stay within 0.005 Dice of plain models at every
+budget and with as little as 10% of the training patients. The models are sharp but not
+calibrated in the boundary zone, and disagreement between three seeds is a strong warning sign
+for the patients they get wrong.
 
 ![Best case for the gates](figures/hero_false_alarms.png)
 
@@ -420,6 +425,65 @@ from the tumour only under a dataset shift (also at 600 steps), and do neither o
 are trained properly. Whether the dataset-shift benefit survives full training has not been
 tested.
 
+## Round 5: budget, less data, calibration and cheap gains
+
+Round 5 was written down in [PREREGISTRATION.md](PREREGISTRATION.md) on 2026-11-25, before any of
+its runs. Everything uses VGG-16 with Dice + BCE and three seeds, on the same 117 test patients.
+The new training (27 runs) and the inference pass ran on Kaggle's two T4 GPUs in 8 hours.
+
+![Round 5](figures/round5.png)
+
+| | Pre-registered claim | Verdict |
+|---|---|---|
+| H13 | Gates and plain models are equivalent within ±0.005 Dice (90% CI) | **Equivalent** in all 4 new settings and in 4 of 7 earlier ones |
+| H14 | The edge effect of gates shrinks steadily with training budget | **Not supported**, narrowly: flat to 2,000 steps, then gone |
+| H15 | Gates raise Dice by at least 0.01 with 25% or 10% of the patients | **Not supported** at either |
+| H16a | The models are overconfident (fitted temperature above 1) | **Not supported**: T = 0.97 |
+| H16b | Temperature scaling halves calibration error | **Not supported**: 0.078 to 0.077 |
+| H17a | Seed disagreement tracks ensemble Dice (Spearman at most -0.4) | **Supported**: -0.85 [-0.89, -0.78] |
+| H17b | The 12 most-disputed patients include at least 6 of the 12 worst | **Supported**: 7 of 12 |
+| H18 | Neighbouring slices as input (2.5D) add at least 0.005 Dice | **Not supported**: +0.002 |
+| H19a | Averaging with a left-right flipped prediction raises Dice | **Supported**: +0.001 |
+| H19b | Removing small predicted blobs raises Dice | **Supported**: +0.002 |
+| H19c | A three-seed ensemble beats a single model | **Supported**: +0.002 |
+
+1. **Gates are equivalent to no gates.** At 2,000 and 6,000 training steps, and when trained on
+   only 25% (79) or 10% (32) of the training patients, the gates minus plain Dice difference sits
+   inside ±0.005 with a 90% CI. The margin was chosen after rounds 1 to 4 were seen, so the
+   earlier rows are restatements; the four new settings are real tests. Enhancing tumour, the
+   skull-on set and the dataset shift are too noisy at 600 steps to show equivalence.
+2. **The edge effect is flat, then gone.** Gates cut edge false alarms by 0.16 mL at 600 steps
+   and 0.17 mL at 2,000 (CIs below 0), then by 0.04 and 0.03 mL at 6,000 and 24,500 (CIs span
+   0). The pre-registered claim asked for a steady decline, and 2,000 steps is 0.003 mL worse
+   than 600, so it fails on the letter. The plain model's own Dice climbs from 0.885 to 0.904
+   over the same range: the gates help only while the model is still learning where the edge is.
+3. **Less data does not make gates useful.** With 25% of the patients plain Dice drops to 0.886,
+   with 10% to 0.863. Gates change it by -0.001 and +0.001.
+4. **The models are not overconfident; their middle range is uninformative.** 98% of voxels get
+   p below 0.01 and 1.5% get p above 0.99, and those are well calibrated (0.08% and 96%
+   tumour). The 0.3% in between are 32 to 67% tumour whatever probability the model gives. One
+   temperature cannot fix a flat curve, which is why scaling does nothing. About 5% of all
+   tumour voxels sit at p below 0.01, missed with confidence. This explains round 4's low best
+   threshold (about 0.02): lowering it recovers some of those. My guess before round 5 had been
+   overconfidence, and that was wrong.
+5. **Seed disagreement is a good failure flag.** The share of the predicted tumour where three
+   seeds disagree needs no ground truth, and it correlates at -0.85 with ensemble Dice. Flagging
+   the 12 most-disputed patients (10%) catches 7 of the 12 worst. Part of this is mechanical,
+   since disputed voxels are boundary voxels and boundary errors lower Dice, but that is what a
+   reviewer would want flagged.
+6. **Cheap gains are real but small.** Flip averaging adds 0.001 Dice, dropping predicted blobs
+   under 2 mL adds 0.002, and the three-seed ensemble adds 0.002 (0.906, median HD95 2.66 mm).
+   The blob cut-off was picked on validation, and 2 mL was the largest value tried for every
+   seed, so a larger cut-off might help more. 2.5D input adds 0.002 (0.905 to 0.907 by seed),
+   with a CI above 0, but short of the 0.005 that was asked for.
+7. **Where the model fails.** Small tumours: the smallest quarter (median 28 mL) averages 0.852
+   Dice against about 0.92 for the rest. Several lesions: 0.883 against 0.911 for one. On the
+   second dataset, 24 of the 110 LGG patients score below 0.3 Dice with the MSD-trained models,
+   mostly small tumours and patients with many far false alarms.
+
+The environment that ran rounds 1 to 3 is pinned in
+[requirements-lock.txt](requirements-lock.txt) (Python 3.13.7, CPU PyTorch 2.14.0).
+
 ## What this does not show
 
 - **No radiologist in the loop.** The original project refined segmentations with radiologist
@@ -439,7 +503,10 @@ tested.
   whole-tumour results. Attention gates were designed for 3D networks, where the context they
   summarise is larger; that setting was not tested.
 - **Some comparisons rest on one seed.** The loss comparisons and the VGG-19 runs are single
-  seeds; enhancing tumour has two. Everything in round 4 has three.
+  seeds; enhancing tumour has two. Everything in rounds 4 and 5 has three.
+- **Failure flagging is tested on one model family.** The disagreement flag in round 5 uses
+  three seeds of one VGG-16 setup on one split; how well it transfers to other models or to the
+  LGG set was not checked.
 - **One split.** All MSD results use one patient split; there is no cross-validation.
 - **Sub-regions only partly covered.** Round 2 adds enhancing tumour; the tumour core was not
   tried.
@@ -520,6 +587,17 @@ folders into `runs/`, then:
 python scripts/analyze_round4.py
 ```
 
+Round 5 is `scripts/kaggle/train_kernel5.py`, a second two-GPU notebook that also takes the
+round 4 output as input. It first runs `scripts/round5_infer.py` over the three round 4 VGG-16
+plain models (flip averaging, blob removal, ensemble, seed disagreement), then the 27 training
+runs. Put `runs/r5_*` into `runs/` and its `round5/` folder into `results/round5/`, then:
+
+```bash
+python scripts/analyze_round5.py
+```
+
+The exact package versions used are in `requirements-lock.txt`.
+
 `prepare_data.py` streams volumes out of the tar without extracting it and writes about 6 GB of
 slice arrays to `data/slices/`. `run_grid.py` trains the 15 runs one after another, skipping
 finished ones; each run checkpoints every 25 steps and resumes after a crash or sleep. On an
@@ -542,7 +620,7 @@ python -m pytest tests
 ```
 seg/            data loading, models, losses, metrics, training
 scripts/        data preparation, run queues, analysis per round, gate probe, figures
-scripts/kaggle/ the two Kaggle notebooks for round 4 and the slice hashes they check against
+scripts/kaggle/ the Kaggle notebooks for rounds 4 and 5 and the slice hashes they check against
 tests/          unit tests
 results/        summary tables, paired comparisons, verdicts, logs
 figures/        README figures

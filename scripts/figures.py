@@ -380,8 +380,73 @@ def full_budget():
     plt.close(fig)
 
 
+def round5():
+    """Round 5: gate effect by budget and data, reliability of one model, seed disagreement as a flag."""
+    B, U = ROOT / "results" / "round5_budget.csv", ROOT / "results" / "round5" / "uncertainty.csv"
+    if not (B.exists() and U.exists()):
+        return
+    B, U = pd.read_csv(B), pd.read_csv(U)
+    fig, ax = plt.subplots(1, 3, figsize=(15, 4.5))
+
+    a = ax[0]
+    a.axhline(0, color=MUTED, lw=1)
+    a.errorbar(B.steps, B.fp_boundary_ml, [B.fp_boundary_ml - B.fp_boundary_ml_lo, B.fp_boundary_ml_hi - B.fp_boundary_ml],
+               fmt="o-", color=GATED, ms=7, lw=2, capsize=4, mec=BG)
+    a.set_xscale("log")
+    a.set_xticks(B.steps, [f"{s:,}" for s in B.steps])
+    a.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+    a.set_xlabel("Training steps (VGG-16, 3 seeds, all patients)")
+    a.set_ylabel("Gates minus plain, false alarms\nwithin 5 mm of the tumour (mL)")
+    a.grid(color=GRID, lw=0.5)
+    a.set_title("The edge effect is gone by 6,000 steps", color=INK, fontsize=10, loc="left")
+
+    a = ax[1]
+    t = np.load(ROOT / "runs" / "r4_vgg16_plain_dice_bce_s0" / "test_hist.npz")
+    pos, neg = t["pos"].sum(0), t["neg"].sum(0)
+    p = np.arange(256) / 255
+    edges = np.linspace(0, 1, 11)
+    edges[-1] = 1.01
+    mid, obs = [], []
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        k = (p >= lo) & (p < hi) & (p >= 0.01)
+        n = (pos + neg)[k].sum()
+        mid.append((p[k] * (pos + neg)[k]).sum() / n)
+        obs.append(pos[k].sum() / n)
+    a.plot([0, 1], [0, 1], ":", color=MUTED, lw=1)
+    a.plot(mid, obs, "o-", color=PLAIN, ms=7, lw=2, mec=BG)
+    a.set_xlabel("Predicted tumour probability (voxels with p >= 0.01)")
+    a.set_ylabel("Observed share that is tumour")
+    a.set_xlim(0, 1)
+    a.set_ylim(0, 1)
+    a.grid(color=GRID, lw=0.5)
+    a.text(0.97, 0.05, "98% of voxels: p < 0.01, 0.08% tumour\n1.5% of voxels: p > 0.99, 96% tumour",
+           transform=a.transAxes, ha="right", va="bottom", color=MUTED, fontsize=8)
+    a.set_title("In between, the probability says little", color=INK, fontsize=10, loc="left")
+
+    a = ax[2]
+    worst = U.ensemble_dice.rank(method="first") <= 12
+    flagged = U.disagree_frac.rank(ascending=False, method="first") <= 12
+    a.scatter(U.disagree_frac[~worst], U.ensemble_dice[~worst], s=22, color=MUTED, alpha=0.7, lw=0)
+    a.scatter(U.disagree_frac[worst], U.ensemble_dice[worst], s=40, color=GATED, lw=0, label="12 lowest Dice")
+    cut = U.disagree_frac[flagged].min()
+    a.axvline(cut, color=PLAIN, lw=1, ls="--")
+    a.text(cut, U.ensemble_dice.max(), "  flagging the top 12\n  catches 7 of the 12 worst", color=PLAIN, fontsize=8,
+           va="top")
+    a.set_xlabel("Share of the predicted tumour where the 3 seeds disagree")
+    a.set_ylabel("3-seed ensemble Dice")
+    a.grid(color=GRID, lw=0.5)
+    a.legend(frameon=False, fontsize=8, loc="lower left", labelcolor=INK)
+    a.set_title("Seed disagreement flags the failures (rho -0.85)", color=INK, fontsize=10, loc="left")
+    fig.suptitle("Round 5: training budget, calibration and flagging, VGG-16, 117 test patients",
+                 x=0.01, ha="left", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(FIG / "round5.png", dpi=130)
+    plt.close(fig)
+
+
 def main():
     FIG.mkdir(exist_ok=True)
+    round5()
     S = pd.read_csv(ROOT / "results" / "summary.csv")
     curves(set(S.run))
     threshold_curve()

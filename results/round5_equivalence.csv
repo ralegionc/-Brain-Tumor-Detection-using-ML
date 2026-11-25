@@ -4,9 +4,9 @@ setting,kind,dice_diff,ci90_lo,ci90_hi,verdict
 "Enhancing tumour, InceptionV3, 600 steps",restatement,0.008348289179448572,-0.0009331959109862701,0.020194511117389326,not shown equivalent
 "Skull kept (LGG), InceptionV3, 600 steps",restatement,0.004067070229447203,-0.00021289533626256882,0.008488105149768499,not shown equivalent
 "MSD-trained on LGG, InceptionV3, 600 steps",restatement,0.0018537974486088147,-0.007304260217110588,0.010387576423608665,not shown equivalent
-"MSD, VGG-16, 2,000 steps",test,,,,not run
-"MSD, VGG-16, 6,000 steps",test,,,,not run
+"MSD, VGG-16, 2,000 steps",test,-0.0018059162052053179,-0.003703445746211205,-0.00022863906778776777,equivalent
+"MSD, VGG-16, 6,000 steps",test,0.00014273873354650972,-0.0007084406406129638,0.0010956509266201178,equivalent
 "MSD, VGG-16, 24,500 steps",restatement,-0.0006149965474987474,-0.001566664912001069,0.00032376361416169207,equivalent
 "MSD, InceptionV3 at 2x, 24,500 steps",restatement,0.0007813518709884787,-8.846753753210535e-05,0.001664076818536844,equivalent
-"MSD, VGG-16, 25% of patients",test,,,,not run
-"MSD, VGG-16, 10% of patients",test,,,,not run
+"MSD, VGG-16, 25% of patients",test,-0.0005969833315521808,-0.0023489852482754424,0.0010037476608340912,equivalent
+"MSD, VGG-16, 10% of patients",test,0.0005825545519624699,-0.0015391965406980582,0.002662943100584003,equivalent

@@ -1,0 +1,9 @@
+val done
+component cut-offs picked on validation (mL): {0: np.float64(2.0), 1: np.float64(2.0), 2: np.float64(2.0)}
+  test 0 BRATS_011 ensemble dice 0.942
+  test 20 BRATS_132 ensemble dice 0.920
+  test 40 BRATS_230 ensemble dice 0.874
+  test 60 BRATS_295 ensemble dice 0.922
+  test 80 BRATS_374 ensemble dice 0.890
+  test 100 BRATS_435 ensemble dice 0.945
+test done

@@ -1,0 +1,23 @@
+{
+ "encoder": "vgg16",
+ "attention": true,
+ "loss": "dice_bce",
+ "seed": 2,
+ "data": "msd",
+ "target": "wt",
+ "in_scale": 1,
+ "steps": 2000,
+ "batch": 16,
+ "lr": 0.0003,
+ "warmup": 30,
+ "threads": 2,
+ "ckpt_every": 1000,
+ "val_every": 500,
+ "out": "runs/r5_vgg16_ag_dice_bce_s2_n2000",
+ "eval_limit": 0,
+ "eval_only": false,
+ "amp": true,
+ "ram": true,
+ "context": 0,
+ "train_frac": 1.0
+}
