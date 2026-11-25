@@ -200,3 +200,81 @@ Each hypothesis is scored as in rounds 1 and 2 (per-patient paired differences, 
   VGG-16 minus InceptionV3 1x gap in seed-mean Dice (plain models).
 - Descriptive only: how much every configuration gains from the longer schedule, against its
   round 1 or 2 counterpart.
+
+## Round 5, written 2026-11-25 after round 4 results and before any round 5 code was run
+
+Round 4 found that gates add nothing at full budget and that the edge effect of rounds 1 to 3
+is gone. Round 5 asks why, whether gates matter with less data, and how reliable the full-budget
+models are. Unless stated otherwise the recipe is round 4's (MSD whole tumour, FLAIR/T1gd/T2w,
+24,500 steps, 300 warmup, fp16, batch 16, final weights) and scoring is as before: per-patient
+paired differences on the 117 MSD test patients, seed-pooled, 5,000-sample bootstrap.
+
+What was already seen before writing this: every round 1 to 4 test metric, the round 4
+validation Dice curves (logged every 1,000 steps), and the round 4 per-patient probability
+histograms only through the threshold test of H11. No calibration, per-patient uncertainty,
+failure breakdown, data-fraction, 2.5D, flip or ensemble result has been computed.
+
+New runs, all on Kaggle (two T4s), in this order, which is also the drop order if GPU time runs
+out (dropped from the end; a hypothesis that loses a run is reported as not run):
+
+1. Inference pass over the round 4 VGG-16 plain models (seeds 0 to 2), validation and test,
+   with and without a left-right flip: the inputs for H16 to H19.
+2. Budget series: VGG-16 {plain, gates} x seeds {0, 1, 2} at 2,000 and at 6,000 steps (warmup
+   scaled to 30 and 100 steps), otherwise round 4's recipe.
+3. 2.5D: VGG-16 plain, seeds {0, 1, 2}, given the slice above and below as six extra channels.
+   The first convolution takes 9 channels; the centre slice gets the ImageNet weights and the
+   neighbour weights start at zero, so training starts from the 2D model. At the top and bottom
+   of a volume the missing neighbour is replaced by the centre slice.
+4. Less data, 25%: VGG-16 {plain, gates} x seeds {0, 1, 2}, trained on 79 of the 314 training
+   patients (a fixed random subset, the same for every run; validation and test unchanged).
+5. Less data, 10%: the same with 32 patients (a subset of the 25% patients).
+
+**H13, gates are equivalent to plain (margin set after seeing round 4).** In every setting, the
+90% CI of gates minus plain Dice lies inside ±0.005. The margin is the round 1 seed-to-seed
+spread of InceptionV3 (0.003 to 0.008) rounded, but it is chosen after the round 4 CIs were
+seen, so for the round 1 to 4 settings this is a restatement, not a test. It is a real test
+only for the new settings (H14 budgets and H15 fractions).
+
+**H14, the edge effect fades with training budget.** VGG-16, gates minus plain, false-positive
+volume within 5 mm of the tumour, seed-pooled. Supported if (a) the CI at 2,000 steps lies below
+0, and (b) the magnitudes are non-increasing across 600 (round 2), 2,000, 6,000 and 24,500 steps
+(round 4) by point estimate. Descriptive: the same series for Dice and distant false alarms.
+
+**H15, gates help with less data.** Gates raise seed-pooled Dice by at least 0.01 over plain,
+scored separately at 10% and 25% of training patients. Descriptive: edge and distant false
+alarms, and the Dice cost of less data itself.
+
+**H16, calibration.** Voxel-level calibration of the three round 4 VGG-16 plain models, from
+256-bin probability histograms. ECE uses 10 equal-width probability bins over the voxels with
+p >= 0.01 (the rest is almost all background far from tumour and would swamp it), weighted by
+voxel count. Temperature T is fitted per seed on validation by minimising voxel log loss over
+all voxels, using bin-centre logits clipped at the two end bins.
+- H16a: the models are overconfident: T > 1 for every seed.
+- H16b: temperature scaling cuts test ECE by at least half, for every seed.
+- H16c (descriptive): ECE and Dice of the three-seed ensemble (mean probability).
+
+**H17, flagging failed cases.** Per test patient, seed disagreement is the volume where the
+three VGG-16 plain models disagree at 0.5, divided by the volume any of them predicts.
+- H17a: Spearman correlation between disagreement and ensemble Dice is at most -0.4, with a
+  bootstrap CI below 0.
+- H17b: the 12 patients (10%) with the highest disagreement include at least 6 of the 12 with
+  the lowest ensemble Dice (chance is about 1.2).
+- Descriptive: the same with the ensemble's uncertain volume (0.1 < p < 0.9) in place of
+  disagreement.
+
+**H18, 2.5D.** VGG-16 plain with neighbouring slices raises seed-pooled Dice over round 4 VGG-16
+plain by at least 0.005, with a CI above 0.
+
+**H19, test-time and post-processing gains**, on the round 4 VGG-16 plain models, pooled over
+seeds, each against the plain single-model prediction at 0.5:
+- H19a: averaging the prediction with that of the left-right flipped input raises Dice, CI above 0.
+- H19b: removing predicted 3D components smaller than a cut-off raises Dice, CI above 0. The
+  cut-off is picked on validation from {0.05, 0.1, 0.25, 0.5, 1, 2} mL, separately per seed.
+- H19c: the three-seed ensemble raises Dice over the seed-mean single model, CI above 0.
+
+**Descriptive: where the models fail.** Per-patient Dice of the round 4 VGG-16 plain models
+against tumour volume and number of separate lesions (Spearman), and the same for the round 3
+MSD-trained models on the 110 LGG patients.
+
+Also in this round: a pinned environment file (`requirements-lock.txt`) from the Kaggle and local
+setups.
