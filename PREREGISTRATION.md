@@ -278,3 +278,60 @@ MSD-trained models on the 110 LGG patients.
 
 Also in this round: a pinned environment file (`requirements-lock.txt`) from the Kaggle and local
 setups.
+
+## Round 6, written 2026-11-25 after round 5 results and before any round 6 code was run
+
+Two questions, both run on a laptop CPU with models that already exist; no new training.
+What was seen before writing this: all round 1 to 5 results, including round 5's finding that
+the smallest quarter of test tumours scores 0.852 Dice against about 0.92 for the rest, and
+that seed disagreement tracks Dice. Nothing about conformal intervals or planted tumours has
+been computed.
+
+### H20, guaranteed tumour volume ranges (split conformal prediction)
+
+Point estimate: V_hat, the mean of three seeds' predicted whole-tumour volumes (threshold 0.5).
+Score on a calibration patient: s = |log((V + 1) / (V_hat + 1))|, volumes in mL. The interval for
+a new patient is (V_hat + 1) * exp(+-q) - 1, where q is the ceil((n + 1) * 0.9)-th smallest
+calibration score. Target coverage 90%. Calibration set: the 53 MSD validation patients unless
+stated. Two model sets: A, round 4 VGG-16 plain (24,500 steps); B, round 3 InceptionV3 plain on
+the T1w, FLAIR, T1gd channels (600 steps), the only models that can read the LGG scans.
+- H20a: set A covers at least 85% of the 117 MSD test patients (90% minus about two binomial
+  standard errors).
+- H20b: set B covers at least 85% of MSD test patients, and under 80% of the 110 LGG patients
+  (the shift breaks the guarantee).
+- H20c: recalibrating set B on 20 LGG patients restores coverage: over 1,000 random splits, the
+  mean coverage of the other 90 LGG patients is at least 85%. Median interval width reported.
+- H20d: weighted conformal prediction (weights from a logistic-regression classifier telling MSD
+  validation from LGG patients using log V_hat and the seed spread, no labels) gives at least
+  85% coverage on LGG with MSD calibration only.
+- H20e: dividing the score by (sigma + 0.05), where sigma is the standard deviation of the three
+  seeds' log(V + 1), keeps set A's MSD test coverage at or above 85% and makes the median
+  interval at least 10% narrower than the plain score.
+
+### H21, planted tumours: is "small tumours fail" about size itself?
+
+Recipients: the 117 MSD test patients. Donors: the largest 3D tumour component of each of the 53
+validation patients (never seen in training), with its image values. A donor is scaled to a
+target volume by the same zoom on all axes (linear for images, the mask re-thresholded at 0.5),
+its intensities shifted per channel so its 3 mm surrounding ring matches the recipient's at the
+landing spot, and blended in with a mask smoothed by a 1-voxel Gaussian. Landing spots are drawn
+at random inside the recipient's brain (eroded by 3 voxels, the whole donor inside the brain),
+at least 20 mm from the recipient's own tumour. Score: Dice between the planted mask and the
+prediction inside the planted mask dilated by 10 mm. Model: round 4 VGG-16 plain, seed 0
+(all three seeds if time allows; the verdicts use seed 0). Grid per recipient: target volumes
+5, 10, 20, 40 and 80 mL, each with one natively small donor (at most 30 mL) and one natively
+large donor (at least 80 mL), plus one random donor at its own size; donors and spots drawn
+with a fixed seed.
+- H21a, validity check: unscaled planted tumours score close to real ones. Binning by volume at
+  the quartiles of real test tumour volumes, the mean absolute difference between planted and
+  real mean Dice is at most 0.05. If this fails, H21b and H21c are reported but marked as
+  resting on unrealistic tumours.
+- H21b: size itself lowers Dice: planted Dice at 5 mL is at least 0.05 below that at 80 mL,
+  pooled over donors, with a paired (per recipient) bootstrap CI excluding 0.
+- H21c: it is size, not the kind of tumour that is small: at each target volume, natively small
+  and natively large donors differ by less than 0.02 mean Dice, at all five volumes.
+- Descriptive: planted Dice at 10 mL against depth (distance from the brain surface) and
+  position, as a map.
+
+A static demo page of test patients (predictions, seed disagreement, volume ranges, planted
+examples) is built alongside; it tests nothing.
