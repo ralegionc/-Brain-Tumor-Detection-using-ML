@@ -13,6 +13,16 @@ testable hypotheses in [PREREGISTRATION.md](PREREGISTRATION.md) before any model
 then scored on 117 held-out patients. A second round, also pre-registered, then asked whether
 Tversky is just a lower threshold, whether gates help on a harder sub-region or on scans with
 the skull left in, and why VGG beat InceptionV3 ([Round 2](#round-2-four-follow-up-questions)).
+[Round 3](#round-3-what-the-gates-do-and-a-dataset-shift) looked inside the gates and tested a
+shift between datasets, and [Round 4](#round-4-the-full-budget-rerun) reran the main comparisons
+with 40 times the training on a GPU.
+
+**In one paragraph:** attention gates never improved Dice. At short training they trimmed false
+alarms at the tumour edge, and under a shift between datasets they cut stray false alarms by
+10 mL per patient, but the edge effect disappears with full training. Inside the network the
+gates act as a spotlight on the tumour region. Tversky and other imbalance losses are a
+threshold in disguise. The VGG vs InceptionV3 gap is an input-size effect. Training budget
+mattered more than any of these choices.
 
 ![Best case for the gates](figures/hero_false_alarms.png)
 
@@ -22,6 +32,9 @@ false alarm, amber is missed tumour, the white line is the true boundary. On ave
 effect is far smaller, as the results below show.*
 
 ## Findings
+
+Round 1, at 600 training steps. Rounds 2 to 4 have their own tables below; round 4 overturns
+point 2.
 
 | | Pre-registered claim | Verdict |
 |---|---|---|
@@ -56,7 +69,7 @@ effect is far smaller, as the results below show.*
 | Split | By patient (CRC32 hash): 314 train, 53 validation, 117 test |
 | Slices | Axial, z-scored per channel inside the brain, cropped to 224 and resampled to 128 x 128 (1.75 mm pixels); slices under 5% brain dropped. 39,176 train, 14,529 test |
 | Model | U-Net decoder on an ImageNet encoder (VGG-16-BN, VGG-19-BN or InceptionV3, cut into 5 stages); optional additive attention gates (Oktay et al. 2018) on all four skips |
-| Training | 600 steps of batch 16, AdamW 3e-4, cosine decay, left-right flips and intensity jitter; final weights, no checkpoint picking. Output bias starts at the tumour prior |
+| Training | 600 steps of batch 16, AdamW 3e-4, cosine decay, left-right flips and intensity jitter; final weights, no checkpoint picking. Output bias starts at the tumour prior. Round 4: 24,500 steps on a GPU |
 | Evaluation | Each test patient's slices are stacked back into a 3D volume and scored at 1 x 1.75 x 1.75 mm |
 | Statistics | Per-patient paired differences, 5,000-sample bootstrap 95% CIs, Wilcoxon signed-rank tests |
 
@@ -240,7 +253,8 @@ mask to split them with).
 Put side by side, the pattern from round 1 holds in every setting: no Dice gain beyond seed
 noise, no direction in false alarms far from the tumour, and a consistent cut in false alarms
 at the edge. In this setup an attention gate is a boundary-tightening device, not a filter for
-normal anatomy.
+normal anatomy. (Round 4 later showed the edge effect is gone after full training; see the
+[updated figure](#gates-across-all-settings-with-rounds-3-and-4).)
 
 ### Encoders, again (H7)
 
@@ -265,6 +279,147 @@ one seed.
 
 The extra VGG-16 seeds also recheck H1 on a second encoder: gates minus plain, pooled over
 three seeds, is -0.001 [-0.002, +0.000] Dice.
+
+## Round 3: what the gates do, and a dataset shift
+
+Two questions, again written into [PREREGISTRATION.md](PREREGISTRATION.md) before scoring. If
+gates tighten the tumour edge, do their maps show it, and does the effect go away when the gates
+are switched off? And do gates help when a model trained on skull-stripped scans meets scans with
+the skull in?
+
+| | Pre-registered claim | Verdict |
+|---|---|---|
+| H8a | The finest gate is lower just outside the tumour (0 to 5 mm) than far away (over 15 mm) | **Not supported**: the opposite, in all 6 models |
+| H8b | Flattening the gate maps raises false alarms near the tumour | **Not supported** (VGG-16); **uninterpretable** (InceptionV3, Dice fell by 0.10) |
+| H9a | Trained on MSD and tested on all 110 LGG patients, gates cut far-off false alarms | **Supported**: -10.4 mL per patient |
+| H9b | In the same test, gates raise Dice by at least 0.01 | **Not supported** (+0.002) |
+
+[results/verdicts_round3.md](results/verdicts_round3.md),
+[results/gate_profile_summary.csv](results/gate_profile_summary.csv),
+[results/ablation_seed0.csv](results/ablation_seed0.csv),
+[results/round3_summary.csv](results/round3_summary.csv).
+
+### The gates are a spotlight, not an edge filter (H8)
+
+![Gate value by distance](figures/gate_profile.png)
+
+For each of the six gated models (InceptionV3 and VGG-16, three seeds each, round 1 and 2
+weights), every test slice that contains tumour was run through the network and each gate map
+was averaged within distance bands around the true boundary. The finest gate (L1, orange) is
+open on the tumour and in the first 5 mm around it (about 0.7 to 0.78), and it closes with
+distance, down to about 0.22 more than 15 mm away. It opens partly again outside the brain,
+where there is nothing for it to hide. Just outside the tumour minus far away is +0.29 to +0.58
+per patient in all six models, every CI above 0. The pre-registered guess was the reverse: a
+dip just outside the edge, where the boundary false alarms sit. In InceptionV3 the two coarsest
+gates stay at about 0.94 everywhere and do almost nothing; VGG-16 uses all four.
+
+The second test switched the gates off at test time by replacing each gate map with its own
+per-slice average. That keeps the overall amount of signal passed through but removes the
+spatial pattern:
+
+| Gate maps flattened, minus intact, 3 seeds | Edge false alarms (mL) | Far false alarms (mL) | Dice |
+|---|---|---|---|
+| VGG-16 | -4.53 [-5.09, -3.98] | -0.52 [-0.77, -0.31] | -0.036 [-0.045, -0.029] |
+| InceptionV3 | -3.58 [-4.06, -3.12] | -0.33 [-0.51, -0.19] | -0.101 [-0.112, -0.090] |
+
+False alarms fall rather than rise, but only because the predicted tumour shrinks: the tumour
+missed at the edge grows by 10 to 12 mL per patient (seed 0). Flattening only the finest gate
+does most of the damage in InceptionV3 (-0.106 Dice on seed 0) and the deeper ones almost none;
+VGG-16 loses a little at every level. Opening every gate fully costs only 0.006 to 0.007 Dice,
+and in VGG-16 it adds about 2 mL of false alarms both near and far from the tumour.
+
+Taken together: the trained networks do lean on their gates, which pass fine detail through
+around the tumour and damp it elsewhere. But a network without gates learns to do as well
+(round 1), so the spotlight is a route to the same answer, not a better one.
+
+### Trained on one dataset, tested on another (H9)
+
+The round 2 skull-on models were trained on LGG itself. Here the question is the realistic one:
+a model trained on clean, skull-stripped BraTS scans meets scans with the skull in. LGG has
+pre-contrast T1, FLAIR and post-contrast T1, so six new MSD models were trained on that same
+channel set (InceptionV3, with and without gates, three seeds; pre-contrast T1 was streamed out
+of the original MSD archive), then run on all 110 LGG patients with the images turned to match
+MSD's orientation.
+
+| | Dice | Far false alarms (mL) |
+|---|---|---|
+| MSD-trained, plain, on all 110 LGG patients (3 seeds) | 0.485 to 0.529 | 36.6 to 49.7 |
+| MSD-trained, gates, on all 110 LGG patients (3 seeds) | 0.500 to 0.534 | 30.2 to 36.8 |
+| For scale: LGG-trained, on the 33 LGG test patients | 0.79 to 0.81 | 0.5 to 1.1 |
+
+The shift is severe. On the 33 LGG test patients, MSD-trained models score 0.55 against 0.80 for
+models trained on LGG, and the reverse direction is as bad (LGG-trained models reach 0.48 to
+0.50 on the MSD test set against 0.86). It is not the channel choice: the same models score
+0.858 on MSD itself, against 0.868 with round 1's channels. The cause is the scans themselves.
+Without a brain mask the 30 to 50 mL of far false alarms per patient cannot be placed, but
+skull and scalp, which MSD models have never seen, are the obvious suspects.
+
+Gates cut those far false alarms by 10.4 mL per patient [-12.6, -8.4], with every seed lower
+(-8.8, -19.6, -2.9), and edge false alarms by 1.3 mL. Dice does not move (+0.002 [-0.009,
++0.012]): the removed false alarms are a small share of the error. Leaving out the 10 patients
+whose T1 channel is a copy of FLAIR in the source data changes neither verdict (-10.2 mL,
++0.005). This is the only place in the project where gates cut false alarms far from the tumour,
+and these models trained for 600 steps; round 4 shows why that matters.
+
+## Round 4: the full-budget rerun
+
+Every model so far trained for 600 steps of batch 16, about a quarter of an epoch, because it
+ran on a laptop CPU. Round 4 reran the main comparisons with 24,500 steps (10 epochs, about 40
+times the budget) on two Kaggle T4 GPUs, with the hypotheses fixed beforehand. The recipe is
+otherwise round 1's, with mixed precision; the slice arrays were rebuilt on Kaggle from the same
+MSD archive and checked against hashes of the local ones. All 18 runs finished, in 8.5 hours.
+
+| | Pre-registered claim | Verdict |
+|---|---|---|
+| H10a | Gates raise Dice by at least 0.01 (VGG-16; InceptionV3 at 2x) | **Not supported** (-0.001; +0.001) |
+| H10b | Gates cut far false alarms, every seed lower | **Not supported** (-0.06; -0.03 mL, CIs span 0) |
+| H10c | Gates cut edge false alarms | **Not supported** (-0.03; -0.04 mL, CIs span 0) |
+| H11 | A lower threshold on Dice+BCE buys what Tversky buys | **Supported** |
+| H12a | VGG-16 beats InceptionV3 at normal input size | **Supported**: +0.012 [+0.008, +0.016] |
+| H12b | InceptionV3 at 2x input closes at least half that gap | **Supported**: 93% |
+
+[results/verdicts_round4.md](results/verdicts_round4.md),
+[results/round4_summary.csv](results/round4_summary.csv),
+[results/round4_gains.csv](results/round4_gains.csv).
+
+![Full budget](figures/full_budget.png)
+
+1. **The edge effect was a short-training effect.** The one gate result that held in rounds 1
+   and 2, 0.16 to 0.51 mL fewer false alarms at the edge, shrinks to -0.03 and -0.04 mL with
+   CIs spanning 0. Validation Dice for gated and plain models tracks closely for the whole run.
+   With enough training, gates add nothing measurable on this task.
+2. **Threshold still equals Tversky.** For each seed the threshold was picked on validation where
+   VGG-16 Dice+BCE reaches Tversky's sensitivity. On the test set Dice+BCE at that threshold
+   minus Tversky at 0.5 is +0.001 [-0.001, +0.004] Dice, with sensitivity within 0.001. The
+   threshold needed is now 0.020 to 0.027 rather than 0.17: longer training pushes probabilities
+   to the extremes, so the operating point moves a long way down.
+3. **The encoder gap is still about input size.** VGG-16 scores 0.904, InceptionV3 0.892 at
+   normal input and 0.903 at 2x (2x minus VGG-16: -0.001 [-0.004, +0.003]).
+4. **Budget beats every design choice.** Every configuration gains 0.014 to 0.030 Dice over its
+   600-step version, more than any gate, loss or encoder difference in the project. VGG-16 reaches
+   0.904 Dice with median HD95 of 2.7 mm, and the three seeds of each model land within 0.003 of
+   each other, with one exception: one InceptionV3 seed at normal input is an outlier (0.883, with 3.3 mL of far false
+   alarms against about 0.7 for the rest).
+
+| Full budget, 117 test patients | Dice | Sensitivity | Precision | Median HD95 (mm) |
+|---|---|---|---|---|
+| VGG-16 plain, 3 seeds | 0.903 to 0.904 | 0.900 to 0.901 | 0.915 to 0.916 | 2.67 to 3.00 |
+| VGG-16 gates, 3 seeds | 0.903 | 0.898 to 0.899 | 0.917 | 2.66 to 2.67 |
+| VGG-16 plain, Tversky, 3 seeds | 0.897 to 0.898 | 0.930 to 0.935 | 0.871 to 0.877 | 3.40 to 3.47 |
+| InceptionV3 plain, 3 seeds | 0.883 to 0.898 | 0.886 to 0.892 | 0.885 to 0.917 | 3.00 to 4.61 |
+| InceptionV3 at 2x, plain, 3 seeds | 0.902 to 0.905 | 0.896 to 0.900 | 0.915 to 0.917 | 3.00 |
+| InceptionV3 at 2x, gates, 3 seeds | 0.903 to 0.904 | 0.898 to 0.900 | 0.916 to 0.918 | 2.66 to 2.67 |
+
+### Gates across all settings, with rounds 3 and 4
+
+![Gates by setting](figures/gates_by_setting.png)
+
+The last three rows are new. Across the whole project, gates never change Dice beyond seed
+noise. They trim false alarms at the tumour edge in every 600-step setting, cut false alarms far
+from the tumour only under a dataset shift (also at 600 steps), and do neither once the models
+are trained properly. Whether the dataset-shift benefit survives full training has not been
+tested.
+
 ## What this does not show
 
 - **No radiologist in the loop.** The original project refined segmentations with radiologist
@@ -275,13 +430,17 @@ three seeds, is -0.001 [-0.002, +0.000] Dice.
   round 1 could not see scalp fat at all. Round 2's skull-on test (H6) uses a separate 110-patient
   lower-grade glioma set with 33 test patients, nominal voxel sizes, and no brain mask to split
   false alarms inside the brain from those outside it.
-- **Small compute budget.** Everything ran on a laptop CPU. 600 steps of batch 16 is about a
-  quarter of an epoch, at 128 px and in 2D. Absolute Dice (0.85 to 0.89) is below published
-  3D BraTS whole-tumour results (about 0.90+). Comparisons between runs are fair because every run
-  had the same budget, but gates or losses could behave differently in longer training.
-- **Some comparisons rest on one seed.** InceptionV3 and VGG-16 with Dice+BCE have three seeds
-  each, enhancing tumour two, skull-on scans three. The loss comparisons, the VGG-19 runs, the
-  threshold test and the 2x-input run are single seeds.
+- **Most results are short-training results.** Rounds 1 to 3 ran on a laptop CPU at 600 steps of
+  batch 16, about a quarter of an epoch. Round 4 showed this matters: the gate edge effect seen
+  in every 600-step setting is gone at 24,500 steps. The enhancing-tumour, skull-on, gate-map and
+  dataset-shift results (H5, H6, H8, H9) were not rerun at full budget, so they describe
+  undertrained models.
+- **2D at 128 px.** Even at full budget (0.904 Dice) this is below published 3D BraTS
+  whole-tumour results. Attention gates were designed for 3D networks, where the context they
+  summarise is larger; that setting was not tested.
+- **Some comparisons rest on one seed.** The loss comparisons and the VGG-19 runs are single
+  seeds; enhancing tumour has two. Everything in round 4 has three.
+- **One split.** All MSD results use one patient split; there is no cross-validation.
 - **Sub-regions only partly covered.** Round 2 adds enhancing tumour; the tumour core was not
   tried.
 
@@ -334,6 +493,33 @@ python scripts/analyze_round2.py
 `run_round2.py` runs the threshold sweep first (no training), then the 17 round 2 runs, about
 16 hours on the same CPU.
 
+Round 3 streams pre-contrast T1 out of the same MSD archive (no full download), trains the six
+MSD models on LGG's channel set, scores them on LGG and back, then runs the gate probe (about 12
+hours of test-set passes on the CPU):
+
+```bash
+python scripts/prepare_t1.py
+```
+
+```bash
+python scripts/run_round3.py
+```
+
+```bash
+python scripts/analyze_round3.py
+```
+
+Round 4 runs on Kaggle. `scripts/kaggle/prep_kernel.py` is a CPU notebook that rebuilds the
+slice arrays from the MSD archive and checks them against `scripts/kaggle/slices.sha256`;
+`scripts/kaggle/train_kernel.py` is a two-GPU notebook that takes that output and this code as
+inputs, trains the 18 runs in the pre-registered order, and stores per-patient probability
+histograms (`scripts/prob_hist.py`) for the threshold test. Put the downloaded `runs/r4_*`
+folders into `runs/`, then:
+
+```bash
+python scripts/analyze_round4.py
+```
+
 `prepare_data.py` streams volumes out of the tar without extracting it and writes about 6 GB of
 slice arrays to `data/slices/`. `run_grid.py` trains the 15 runs one after another, skipping
 finished ones; each run checkpoints every 25 steps and resumes after a crash or sleep. On an
@@ -355,7 +541,8 @@ python -m pytest tests
 
 ```
 seg/            data loading, models, losses, metrics, training
-scripts/        data preparation, run queue, analysis, figures
+scripts/        data preparation, run queues, analysis per round, gate probe, figures
+scripts/kaggle/ the two Kaggle notebooks for round 4 and the slice hashes they check against
 tests/          unit tests
 results/        summary tables, paired comparisons, verdicts, logs
 figures/        README figures

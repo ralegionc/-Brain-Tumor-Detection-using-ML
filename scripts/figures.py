@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import matplotlib
+import matplotlib.ticker
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -248,11 +249,19 @@ def gate_settings():
     """Gates minus plain across settings, per-patient differences averaged over seeds."""
     from scripts.analyze import boot_ci, load
     runs = load()
-    name = lambda pre, enc, att, s: f"{pre}{enc}_{'ag' if att else 'plain'}_dice_bce_s{s}"
+    for d in (ROOT / "runs").glob("msd3-wt_*"):  # MSD-trained models scored on every LGG patient
+        if (d / "lgg_all_metrics.csv").exists():
+            runs["lgg-all_" + d.name] = pd.read_csv(d / "lgg_all_metrics.csv").set_index("case").sort_index()
+    name = lambda pre, enc, att, s: (f"{pre}{enc}_{'ag' if att else 'plain'}_dice_bce_s{s}"
+                                     + ("_x2" if pre == "r4_" and enc == "inceptionv3" else ""))
     settings = [("", "inceptionv3", 3, "Whole tumour, skull-stripped (MSD)\nInceptionV3, 3 seeds, 117 patients"),
                 ("", "vgg16", 3, "Whole tumour, skull-stripped (MSD)\nVGG-16, 3 seeds, 117 patients"),
                 ("msd-et_", "inceptionv3", 2, "Enhancing tumour (MSD)\nInceptionV3, 2 seeds, 117 patients"),
-                ("lgg-wt_", "inceptionv3", 3, "Whole tumour, skull kept (LGG)\nInceptionV3, 3 seeds, 33 patients")]
+                ("lgg-wt_", "inceptionv3", 3, "Whole tumour, skull kept (LGG)\nInceptionV3, 3 seeds, 33 patients"),
+                ("lgg-all_msd3-wt_", "inceptionv3", 3,
+                 "Trained on MSD, tested on LGG\nInceptionV3, 3 seeds, 110 patients"),
+                ("r4_", "vgg16", 3, "Full budget, 24,500 steps (MSD)\nVGG-16, 3 seeds, 117 patients"),
+                ("r4_", "inceptionv3", 3, "Full budget, 24,500 steps (MSD)\nInceptionV3 at 2x, 3 seeds, 117 patients")]
     rows = []
     for pre, enc, n, lab in settings:
         pairs = [(name(pre, enc, 1, s), name(pre, enc, 0, s)) for s in range(n)]
@@ -281,11 +290,93 @@ def gate_settings():
         a.set_title(title, color=INK, fontsize=10, loc="left")
         a.grid(axis="x", color=GRID, lw=0.5)
         a.tick_params(left=False)
+        a.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(5))
     ax[0].set_yticks(y, P.label, fontsize=9)
-    fig.suptitle("Attention gates minus plain model in each setting, Dice + BCE (95% bootstrap CI)",
+    fig.suptitle("Attention gates minus plain model in each setting, Dice + BCE (95% bootstrap CI);\n"
+                 "every row above the last two trained for 600 steps",
                  x=0.01, ha="left", fontsize=12)
     fig.tight_layout()
     fig.savefig(FIG / "gates_by_setting.png", dpi=130)
+    plt.close(fig)
+
+
+GATE_BINS = [("in_deep", "inside,\n>5 mm deep"), ("in_edge", "inside,\n0-5 mm"), ("out_edge", "outside,\n0-5 mm"),
+             ("out_mid", "outside,\n5-15 mm"), ("out_far", "outside,\n>15 mm"), ("outside_brain", "outside\nthe brain")]
+
+
+def gate_profile():
+    """Round 3, H8a: mean gate value by distance from the true tumour boundary, per gate level."""
+    f = ROOT / "results" / "gate_profile_summary.csv"
+    if not f.exists():
+        return
+    P = pd.read_csv(f)
+    shades = ["#f0efec", "#c3c2b7", "#8a897f", "#5a5953"]  # L1 (finest) brightest
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4.2), sharey=True)
+    x = np.arange(len(GATE_BINS))
+    for a, enc in zip(ax, ["inceptionv3", "vgg16"]):
+        for lvl, c in zip(range(1, 5), shades):
+            r = P[(P.encoder == enc) & (P.level == lvl)].iloc[0]
+            v = [r[b] for b, _ in GATE_BINS]
+            a.plot(x, v, "-o", color=GATED if lvl == 1 else c, lw=2.5 if lvl == 1 else 1.5, ms=6, mec=BG, mew=1.5,
+                   label=f"Gate L{lvl}" + (" (finest)" if lvl == 1 else " (coarsest)" if lvl == 4 else ""))
+        a.axvspan(-0.4, 1.5, color=PANEL, zorder=0)
+        a.text(0.55, 0.04, "tumour", ha="center", color=MUTED, fontsize=8, transform=a.get_xaxis_transform())
+        a.set_xticks(x, [lab for _, lab in GATE_BINS], fontsize=8)
+        a.set_xlim(-0.4, len(GATE_BINS) - 0.2)
+        a.set_ylim(0, 1.05)
+        a.set_title(f"{ENC_NAME[enc]}, 3 seeds", color=INK, fontsize=10, loc="left")
+        a.grid(axis="y", color=GRID, lw=0.5)
+    ax[0].set_ylabel("Mean gate value (0 = closed, 1 = open)")
+    ax[0].legend(frameon=False, fontsize=8, loc="upper right", bbox_to_anchor=(1, 0.86), labelcolor=INK)
+    fig.suptitle("Gates open on and around the tumour and close with distance (117 test patients, tumour slices)",
+                 x=0.01, ha="left", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(FIG / "gate_profile.png", dpi=130)
+    plt.close(fig)
+
+
+def full_budget():
+    """Round 4: what 24,500 steps bought over 600, and gated vs plain validation Dice through training."""
+    f = ROOT / "results" / "round4_gains.csv"
+    if not f.exists():
+        return
+    G = pd.read_csv(f)
+    G["cfg"] = G.run.str.replace(r"^r4_|_dice_bce|_s\d", "", regex=True)
+    label = {"vgg16_plain": "VGG-16, plain", "vgg16_ag": "VGG-16, gates", "inceptionv3_plain": "InceptionV3, plain",
+             "inceptionv3_plain_x2": "InceptionV3 at 2x, plain"}
+    fig, ax = plt.subplots(1, 2, figsize=(13, 4.4), gridspec_kw={"width_ratios": [1, 1.25]})
+    a = ax[0]
+    for i, (cfg, lab) in enumerate(label.items()):
+        g = G[G.cfg == cfg]
+        y = len(label) - 1 - i
+        for _, r in g.iterrows():
+            a.plot([r.dice_600_steps, r.dice], [y, y], color=GRID, lw=1.5, zorder=1)
+        a.plot(g.dice_600_steps, [y] * len(g), "o", color=MUTED, ms=7, mec=BG, mew=1.5, zorder=2)
+        a.plot(g.dice, [y] * len(g), "o", color=PLAIN if "plain" in cfg else GATED, ms=8, mec=BG, mew=1.5, zorder=3)
+        a.annotate(f"+{g.dice_gain.mean():.3f}", (g.dice.max(), y), xytext=(8, 0), textcoords="offset points",
+                   va="center", color=MUTED, fontsize=8)
+    a.set_yticks(range(len(label)), list(label.values())[::-1], fontsize=9)
+    a.set_xlabel("Test Dice (grey: 600 steps, colour: 24,500 steps; one dot per seed)")
+    a.grid(axis="x", color=GRID, lw=0.5)
+    a.tick_params(left=False)
+    a.set_title("Every configuration gains about 0.02 Dice", color=INK, fontsize=10, loc="left")
+
+    a = ax[1]
+    for enc, x2, ls, lab in [("vgg16", "", "-", "VGG-16"), ("inceptionv3", "_x2", "--", "InceptionV3 at 2x")]:
+        for att, c in [("plain", PLAIN), ("ag", GATED)]:
+            logs = [pd.read_csv(ROOT / "runs" / f"r4_{enc}_{att}_dice_bce_s{s}{x2}" / "train_log.csv")
+                    .dropna(subset=["val_dice"]).set_index("step").val_dice for s in range(3)]
+            m = pd.concat(logs, axis=1).mean(axis=1)
+            a.plot(m.index, m.values, ls, color=c, lw=2, label=f"{lab}, {'gates' if att == 'ag' else 'plain'}")
+    a.set_xlabel("Training step (batch 16); round 1 to 3 models stopped at 600")
+    a.set_ylabel("Validation Dice, mean of 3 seeds")
+    a.axvline(600, color=MUTED, lw=1, ls=":")
+    a.grid(color=GRID, lw=0.5)
+    a.legend(frameon=False, fontsize=8, loc="lower right", labelcolor=INK)
+    a.set_title("Gated and plain models train alike", color=INK, fontsize=10, loc="left")
+    fig.suptitle("Round 4: the full-budget rerun on a GPU, 117 test patients", x=0.01, ha="left", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(FIG / "full_budget.png", dpi=130)
     plt.close(fig)
 
 
@@ -295,6 +386,8 @@ def main():
     curves(set(S.run))
     threshold_curve()
     gate_settings()
+    gate_profile()
+    full_budget()
     encoders(S)
     loss_tradeoff(S)
     if (ROOT / "results" / "paired.csv").exists():
