@@ -630,6 +630,20 @@ PREREGISTRATION.md
 
 Model weights are not committed (125 MB each); rerun the queue to regenerate them.
 
+## History
+
+| When | What |
+|---|---|
+| December 2023 | Brain MRI tumour classification notebooks (now in [2023-classification/](2023-classification/)) |
+| 30 Oct 2026 | Segmentation project started; round 1 pre-registered before any training |
+| 30 to 31 Oct 2026 | Round 1: three encoders, attention gates, six losses |
+| 31 Oct to 1 Nov 2026 | Round 2: threshold vs loss, enhancing tumour, skull-on scans, input size |
+| 2 to 3 Nov 2026 | Rounds 3 and 4: inside the gates, dataset shift, full-budget rerun on Kaggle GPUs |
+| 25 Nov 2026 | Round 5: training budget, less data, calibration, failure flagging, cheap gains |
+
+Each round's hypotheses were written down before its runs; the dates are in
+[PREREGISTRATION.md](PREREGISTRATION.md).
+
 ## Earlier work in this repository
 
 [2023-classification/](2023-classification/) holds the original 2023 version of this repository: three Kaggle
