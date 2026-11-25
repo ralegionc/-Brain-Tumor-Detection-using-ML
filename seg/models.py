@@ -11,12 +11,20 @@ from . import ROOT  # noqa: F401  (sets TORCH_HOME)
 
 
 class VGGEncoder(nn.Module):
-    def __init__(self, name, pretrained=True):
+    def __init__(self, name, pretrained=True, in_ch=3):
         super().__init__()
         # batch-norm variants of VGG-16/19 train far more stably with a fresh decoder
         ctor = {"vgg16": tvm.vgg16_bn, "vgg19": tvm.vgg19_bn}[name]
         weights = "DEFAULT" if pretrained else None
         feats = ctor(weights=weights).features
+        if in_ch != 3:  # 2.5D: neighbour slices start with zero weights, so training starts from the 2D net
+            old, new = feats[0], nn.Conv2d(in_ch, 64, 3, padding=1)
+            with torch.no_grad():
+                new.weight.zero_()
+                c = (in_ch - 3) // 2
+                new.weight[:, c:c + 3] = old.weight
+                new.bias.copy_(old.bias)
+            feats[0] = new
         # tap the ReLU before each max-pool: strides 1, 2, 4, 8, 16
         pools = [i for i, m in enumerate(feats) if isinstance(m, nn.MaxPool2d)]
         taps = [p - 1 for p in pools][:5]
@@ -104,12 +112,13 @@ class DecoderBlock(nn.Module):
 
 class SegNet(nn.Module):
     def __init__(self, encoder="vgg16", attention=False, pretrained=True, dec_ch=(256, 128, 64, 32), prior=0.02,
-                 in_scale=1):
+                 in_scale=1, in_ch=3):
         super().__init__()
         self.in_scale = in_scale  # upsample the input this much inside the net; output keeps input size
         if encoder.startswith("vgg"):
-            self.encoder = VGGEncoder(encoder, pretrained)
+            self.encoder = VGGEncoder(encoder, pretrained, in_ch)
         elif encoder == "inceptionv3":
+            assert in_ch == 3, "2.5D is only set up for VGG encoders"
             self.encoder = InceptionEncoder(pretrained)
         else:
             raise ValueError(encoder)

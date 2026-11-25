@@ -1,0 +1,13 @@
+# Exact versions used for every local run (Python 3.13.7, Windows, CPU build of PyTorch).
+# Round 4 and 5 ran on Kaggle's GPU image, whose PyTorch build differs; the notebooks log it.
+# For a GPU, install the CUDA build of the same torch and torchvision versions instead.
+torch==2.14.0
+torchvision==0.29.0
+numpy==2.3.3
+scipy==1.16.3
+pandas==2.3.2
+nibabel==5.4.2
+matplotlib==3.10.6
+pillow==11.3.0
+tabulate==0.10.0
+pytest==9.1.1

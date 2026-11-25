@@ -15,7 +15,7 @@ import pandas as pd
 import torch
 
 from . import ROOT
-from .data import CHANNELS, DATASETS, Slices
+from .data import CHANNELS, DATASETS, Slices, train_patients
 from .losses import LOSSES
 from .metrics import error_patterns, volume_metrics
 from .models import SegNet
@@ -27,6 +27,8 @@ def run_name(a):
     """Round 1 names are unchanged; other datasets, targets and input scales get tags."""
     pre = "" if (a.data, a.target) == ("msd", "wt") else f"{a.data}-{a.target}_"
     post = "" if a.in_scale == 1 else f"_x{a.in_scale}"
+    post += f"_c{a.context}" if a.context else ""
+    post += f"_f{round(a.train_frac * 100)}" if a.train_frac < 1 else ""
     return f"{pre}{a.encoder}_{'ag' if a.attention else 'plain'}_{a.loss}_s{a.seed}{post}"
 
 
@@ -40,8 +42,8 @@ def predict_volume(model, ds, rows, bs=32):
     return np.concatenate(probs)
 
 
-def evaluate(model, out, split="test", keep_maps=6, limit=0, data="msd", target="wt"):
-    ds = Slices(split, DATASETS[data], target, CHANNELS.get(data))
+def evaluate(model, out, split="test", keep_maps=6, limit=0, data="msd", target="wt", context=0):
+    ds = Slices(split, DATASETS[data], target, CHANNELS.get(data), context)
     model.eval()
     rows_out = []
     maps = {}
@@ -83,6 +85,8 @@ def main(argv=None):
     ap.add_argument("--eval-only", action="store_true", help="re-evaluate final.pt without training")
     ap.add_argument("--amp", action="store_true", help="fp16 autocast on a GPU (loss stays in fp32)")
     ap.add_argument("--ram", action="store_true", help="read the training arrays into memory first")
+    ap.add_argument("--context", type=int, default=0, choices=[0, 1], help="1: 2.5D, add the slices above and below")
+    ap.add_argument("--train-frac", type=float, default=1.0, help="train on this share of the training patients")
     a = ap.parse_args(argv)
     torch.set_num_threads(a.threads)
 
@@ -90,10 +94,10 @@ def main(argv=None):
     out.mkdir(parents=True, exist_ok=True)
     if a.eval_only:  # re-score saved weights after a metric change
         torch.set_num_threads(a.threads)
-        model = SegNet(a.encoder, a.attention, pretrained=False, in_scale=a.in_scale)
+        model = SegNet(a.encoder, a.attention, pretrained=False, in_scale=a.in_scale, in_ch=3 + 6 * a.context)
         model.load_state_dict(torch.load(out / "final.pt", weights_only=True, map_location="cpu"))
         model.to(DEVICE)
-        df = evaluate(model, out, limit=a.eval_limit, data=a.data, target=a.target)
+        df = evaluate(model, out, limit=a.eval_limit, data=a.data, target=a.target, context=a.context)
         print(out.name, "re-scored, test dice mean", round(df["dice"].mean(), 4))
         return
     if (out / "test_metrics.csv").exists():
@@ -102,12 +106,14 @@ def main(argv=None):
     json.dump(vars(a), open(out / "config.json", "w"), indent=1)
 
     torch.manual_seed(a.seed)
-    model = SegNet(a.encoder, a.attention, pretrained=True, in_scale=a.in_scale).to(DEVICE)
+    model = SegNet(a.encoder, a.attention, pretrained=True, in_scale=a.in_scale, in_ch=3 + 6 * a.context).to(DEVICE)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4)
     lr_at = lambda s: min(1.0, (s + 1) / a.warmup) * 0.5 * (1 + math.cos(math.pi * s / a.steps))
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lr_at)
     loss_fn = LOSSES[a.loss]
-    train, val = (Slices(s, DATASETS[a.data], a.target, CHANNELS.get(a.data)) for s in ["train", "val"])
+    train, val = (Slices(s, DATASETS[a.data], a.target, CHANNELS.get(a.data), a.context) for s in ["train", "val"])
+    pool = (np.flatnonzero(train.index.case.isin(train_patients(train.index.case, a.train_frac)))
+            if a.train_frac < 1 else None)  # rows of the kept patients
     val_idx = np.random.default_rng(123).choice(len(val), min(256, len(val)), replace=False)
     if a.ram:
         train.x, train.y = np.array(train.x), np.array(train.y)  # a copy; asarray keeps the memmap
@@ -130,7 +136,8 @@ def main(argv=None):
     t0 = time.time()
     while step < a.steps:
         model.train()
-        x, y = train.batch(rng.integers(0, len(train), a.batch), rng)
+        pick = rng.integers(0, len(train) if pool is None else len(pool), a.batch)
+        x, y = train.batch(pick if pool is None else pool[pick], rng)
         x, y = x.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
         with torch.autocast("cuda", dtype=torch.float16, enabled=amp):
             logits = model(x)
@@ -166,7 +173,7 @@ def main(argv=None):
 
     pd.DataFrame(log).to_csv(out / "train_log.csv", index=False)
     torch.save(model.state_dict(), out / "final.pt")
-    df = evaluate(model, out, limit=a.eval_limit, data=a.data, target=a.target)
+    df = evaluate(model, out, limit=a.eval_limit, data=a.data, target=a.target, context=a.context)
     print(out.name, "test dice mean", round(df["dice"].mean(), 4), "median hd95", round(df["hd95"].median(), 2))
     ck.unlink()  # optimiser state is 3x the model; final.pt is all that is needed now
 
