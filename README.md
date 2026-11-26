@@ -20,7 +20,7 @@ traced the gate effect across training budgets and smaller training sets, checke
 tested whether the models can flag their own failures, and tried four cheap accuracy gains.
 [Round 6](#round-6-guaranteed-volume-ranges-and-planted-tumours) gave each patient a tumour
 volume range with a coverage guarantee, and planted real tumours at different sizes into other
-patients' scans to ask why small tumours fail. A [demo page](docs/) shows the models' output
+patients' scans to ask why small tumours fail. A [demo page](https://ralegionc.github.io/-Brain-Tumor-Detection-using-ML/) shows the models' output
 patient by patient.
 
 **In one paragraph:** attention gates never improved Dice. At short training they trimmed false
@@ -533,7 +533,7 @@ itself, or about the kind of tumour that happens to be small?
    hurts. A planted 10 mL tumour is missed entirely (Dice under 0.1) 12% of the time, and those
    deeper in the brain score slightly worse (Spearman -0.21).
 
-**Demo.** [docs/](docs/) is a static page for looking at the models' output patient by patient:
+**Demo.** [The demo page](https://ralegionc.github.io/-Brain-Tumor-Detection-using-ML/) (source in [docs/](docs/)) is a static page for looking at the models' output patient by patient:
 six test patients (the two worst, a small tumour done well, a typical one, the largest, and a
 bad case the disagreement flag missed) and two planted tumours, with slice-by-slice FLAIR and
 T1gd, the true outline, the prediction, where the seeds disagree, Dice, and the 90% volume range.
