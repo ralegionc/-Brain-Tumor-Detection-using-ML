@@ -335,3 +335,16 @@ with a fixed seed.
 
 A static demo page of test patients (predictions, seed disagreement, volume ranges, planted
 examples) is built alongside; it tests nothing.
+
+### Round 6 addendum, 2026-11-25, before the planting grid was run
+
+A smoke test on the first one and then two test patients (22 planted tumours, Dice seen) showed
+two problems with the recipe above, changed before the full run:
+- Only 2 of the 53 donor tumours are at most 30 mL (the largest component of a validation
+  tumour is rarely small), so "natively small" would rest on two shapes. The two donor groups
+  are now the smallest quarter (at most 66 mL, 14 donors) and the largest quarter (at least
+  143 mL, 14 donors). H21c compares these.
+- Random spot-picking (200 tries) failed to place large tumours that would fit. Spots are now
+  drawn from every position where the whole tumour fits, found exactly with a correlation of
+  the forbidden voxels with the tumour mask. A tumour that fits nowhere is recorded as not
+  placed; H21b uses the recipients where both 5 and 80 mL were placed.
