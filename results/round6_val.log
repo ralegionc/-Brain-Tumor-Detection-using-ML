@@ -1,0 +1,24 @@
+  eval 0 BRATS_007 dice=0.915 hd95=2.0
+  eval 20 BRATS_220 dice=0.910 hd95=3.9
+  eval 40 BRATS_396 dice=0.967 hd95=1.8
+r4_vgg16_plain_dice_bce_s0 val dice 0.9215
+  eval 0 BRATS_007 dice=0.911 hd95=2.0
+  eval 20 BRATS_220 dice=0.919 hd95=3.2
+  eval 40 BRATS_396 dice=0.969 hd95=1.8
+r4_vgg16_plain_dice_bce_s1 val dice 0.9195
+  eval 0 BRATS_007 dice=0.910 hd95=2.0
+  eval 20 BRATS_220 dice=0.914 hd95=3.9
+  eval 40 BRATS_396 dice=0.969 hd95=1.8
+r4_vgg16_plain_dice_bce_s2 val dice 0.9183
+  eval 0 BRATS_007 dice=0.823 hd95=12.5
+  eval 20 BRATS_220 dice=0.782 hd95=14.1
+  eval 40 BRATS_396 dice=0.926 hd95=2.7
+msd3-wt_inceptionv3_plain_dice_bce_s0 val dice 0.8767
+  eval 0 BRATS_007 dice=0.840 hd95=6.3
+  eval 20 BRATS_220 dice=0.756 hd95=10.6
+  eval 40 BRATS_396 dice=0.928 hd95=2.7
+msd3-wt_inceptionv3_plain_dice_bce_s1 val dice 0.8727
+  eval 0 BRATS_007 dice=0.844 hd95=4.4
+  eval 20 BRATS_220 dice=0.748 hd95=13.1
+  eval 40 BRATS_396 dice=0.929 hd95=2.5
+msd3-wt_inceptionv3_plain_dice_bce_s2 val dice 0.8737

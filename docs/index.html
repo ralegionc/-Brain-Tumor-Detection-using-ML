@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tumour Segmentation Viewer</title>
+<style>
+:root {
+  --bg: #1a1a19; --panel: #232321; --ink: #f0efec; --muted: #c3c2b7; --faint: #8a897f; --grid: #3a3936;
+  --truth: #f0efec; --pred: #3987e5; --dis: #e66767; --ok: #199e70; --warn: #c98500;
+}
+:root[data-theme="light"] {
+  --bg: #f7f6f2; --panel: #ffffff; --ink: #1f1f1d; --muted: #4c4b45; --faint: #77766d; --grid: #dcdad3;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 24px; margin: 0 0 4px; font-weight: 650; }
+.lede { color: var(--muted); margin: 0 0 20px; max-width: 760px; }
+.lede a { color: var(--pred); }
+.layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+.cases { display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 760px) { .cases { flex-direction: row; overflow-x: auto; padding-bottom: 4px; } .case { min-width: 200px; } .group { display: none; } }
+.case { text-align: left; background: var(--panel); color: var(--ink); border: 1px solid var(--grid); border-radius: 8px;
+        padding: 9px 11px; cursor: pointer; font: inherit; }
+.case:hover { border-color: var(--faint); }
+.case[aria-pressed="true"] { border-color: var(--pred); box-shadow: inset 3px 0 0 var(--pred); }
+.case .t { font-weight: 600; font-size: 14px; }
+.case .s { color: var(--muted); font-size: 12.5px; }
+.group { color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin: 10px 0 2px; }
+.viewer { background: var(--panel); border: 1px solid var(--grid); border-radius: 10px; padding: 16px; }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 18px; }
+@media (max-width: 960px) { .stage { grid-template-columns: 1fr; } }
+canvas { width: 100%; max-width: 560px; aspect-ratio: 1; background: #000; border-radius: 6px; display: block; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 12px; }
+.controls label { color: var(--muted); font-size: 13.5px; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+input[type=range] { width: 100%; accent-color: var(--pred); }
+.slice { display: flex; gap: 10px; align-items: center; margin-top: 10px; color: var(--muted); font-size: 13px; }
+.slice input { flex: 1; }
+.seg { display: inline-flex; border: 1px solid var(--grid); border-radius: 6px; overflow: hidden; }
+.seg button { background: none; border: 0; color: var(--muted); padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--grid); color: var(--ink); }
+.stats { display: flex; flex-direction: column; gap: 12px; }
+.stat .k { color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.stat .v { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.stat .n { color: var(--muted); font-size: 13px; }
+.range { position: relative; height: 26px; margin-top: 6px; }
+.range .bar { position: absolute; top: 10px; height: 6px; background: var(--grid); border-radius: 3px; left: 0; right: 0; }
+.range .ci { position: absolute; top: 8px; height: 10px; background: color-mix(in srgb, var(--pred) 45%, transparent); border-radius: 4px; }
+.range .dot { position: absolute; top: 4px; width: 3px; height: 18px; background: var(--ink); border-radius: 2px; }
+.badge { display: inline-block; font-size: 12.5px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.badge.warn { background: color-mix(in srgb, var(--dis) 22%, transparent); color: var(--dis); }
+.badge.ok { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
+.note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+footer { color: var(--faint); font-size: 12.5px; margin-top: 28px; max-width: 760px; }
+footer a { color: var(--muted); }
+.theme { position: absolute; top: 16px; right: 16px; background: none; border: 1px solid var(--grid); color: var(--muted);
+         border-radius: 6px; padding: 4px 9px; cursor: pointer; font: inherit; font-size: 13px; }
+</style>
+</head>
+<body>
+<button class="theme" id="theme" type="button">Light</button>
+<main>
+  <h1>What the tumour model sees</h1>
+  <p class="lede">Brain MRI from the Medical Segmentation Decathlon, segmented by three copies of the same
+  VGG-16 U-Net trained with different random seeds. Step through the slices, compare the prediction with the
+  radiologist's outline, and see where the three copies disagree. Every number comes from the
+  <a href="https://github.com/ralegionc/-Brain-Tumor-Detection-using-ML">project</a>; nothing runs in your browser except drawing.</p>
+  <div class="layout">
+    <nav class="cases" id="cases" aria-label="Cases"></nav>
+    <section class="viewer">
+      <div class="stage">
+        <div>
+          <canvas id="cv" width="512" height="512" aria-label="MRI slice with overlays"></canvas>
+          <div class="slice"><span>Slice</span><input id="z" type="range" min="0" value="0" aria-label="Slice"><span id="zl"></span></div>
+          <div class="controls">
+            <span class="seg" role="group" aria-label="Image">
+              <button type="button" data-ch="flair" aria-pressed="true">FLAIR</button><button type="button" data-ch="t1gd" aria-pressed="false">T1 + contrast</button>
+            </span>
+            <label><input type="checkbox" id="oTruth" checked> Truth</label>
+            <label><input type="checkbox" id="oPred" checked> Prediction</label>
+            <label><input type="checkbox" id="oDis" checked> Disagreement</label>
+          </div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--truth)"></i>Radiologist outline</span>
+            <span><i class="sw" style="background:var(--pred)"></i>Model (mean of 3 seeds, p &ge; 0.5)</span>
+            <span><i class="sw" style="background:var(--dis)"></i>Seeds disagree</span>
+          </div>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+    </section>
+  </div>
+  <footer>Images: Medical Segmentation Decathlon, Task01 BrainTumour (BraTS 2016/2017), CC BY-SA 4.0.
+  The volume range is a split-conformal 90% interval calibrated on 53 validation patients. Planted tumours are
+  real tumours from validation patients, rescaled and blended into another patient's scan. Not for clinical use.</footer>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const cache = {};
+let data, cur, ch = "flair";
+
+function load(src) {
+  if (!cache[src]) cache[src] = new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = src; });
+  return cache[src];
+}
+function pixels(im) {
+  const c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
+  const g = c.getContext("2d"); g.drawImage(im, 0, 0); return g.getImageData(0, 0, im.width, im.height);
+}
+
+async function select(c) {
+  cur = c;
+  document.querySelectorAll(".case").forEach(b => b.setAttribute("aria-pressed", b.dataset.key === c.key));
+  const [mask] = await Promise.all([load(`cases/${c.key}_masks.png`), load(`cases/${c.key}_flair.jpg`), load(`cases/${c.key}_t1gd.jpg`)]);
+  if (!c.maskData) c.maskData = pixels(mask);
+  $("z").max = c.n - 1;
+  let best = 0, area = -1;
+  for (let i = 0; i < c.n; i++) { const a = truthArea(c, i); if (a > area) { area = a; best = i; } }
+  $("z").value = best;
+  stats(c); draw();
+}
+
+function cell(c, i) { return [(i % c.cols) * c.size, Math.floor(i / c.cols) * c.size]; }
+function truthArea(c, i) {
+  const [x0, y0] = cell(c, i), d = c.maskData; let a = 0;
+  for (let y = 0; y < c.size; y++) for (let x = 0; x < c.size; x++) if (d.data[((y0 + y) * d.width + x0 + x) * 4] > 127) a++;
+  return a;
+}
+
+async function draw() {
+  const c = cur; if (!c) return;
+  const i = +$("z").value, s = c.size, k = cv.width / s;
+  $("zl").textContent = `${i + 1} / ${c.n}`;
+  const im = await load(`cases/${c.key}_${ch}.jpg`);
+  const [x0, y0] = cell(c, i);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(im, x0, y0, s, s, 0, 0, cv.width, cv.height);
+  const d = c.maskData, css = getComputedStyle(document.documentElement);
+  const at = (x, y, o) => d.data[((y0 + y) * d.width + x0 + x) * 4 + o];
+  const truth = (x, y) => x >= 0 && y >= 0 && x < s && y < s && at(x, y, 0) > 127;
+  const pred = (x, y) => x >= 0 && y >= 0 && x < s && y < s && at(x, y, 1) >= 128;
+  if ($("oPred").checked) {
+    ctx.fillStyle = css.getPropertyValue("--pred"); ctx.globalAlpha = 0.38;
+    for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) if (pred(x, y)) ctx.fillRect(x * k, y * k, k, k);
+    ctx.globalAlpha = 1;
+  }
+  if ($("oDis").checked) {
+    ctx.fillStyle = css.getPropertyValue("--dis"); ctx.globalAlpha = 0.85;
+    for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) { const v = Math.round(at(x, y, 2) / 85); if (v > 0 && v < 3) ctx.fillRect(x * k, y * k, k, k); }
+    ctx.globalAlpha = 1;
+  }
+  if ($("oTruth").checked) {
+    ctx.fillStyle = css.getPropertyValue("--truth");
+    for (let y = 0; y < s; y++) for (let x = 0; x < s; x++)
+      if (truth(x, y) && !(truth(x - 1, y) && truth(x + 1, y) && truth(x, y - 1) && truth(x, y + 1))) ctx.fillRect(x * k, y * k, k, k);
+  }
+}
+
+function stats(c) {
+  const el = $("stats");
+  let h = `<div class="stat"><div class="k">${c.kind === "planted" ? "Planted tumour" : "Patient"}</div><div class="v" style="font-size:17px">${c.label}</div><div class="n">${c.kind === "planted" ? c.recipient : c.key}</div></div>`;
+  h += `<div class="stat"><div class="k">Dice</div><div class="v">${c.dice.toFixed(3)}</div><div class="n">${c.kind === "planted" ? "on the planted tumour only" : "1 is a perfect match; test median 0.93"}</div></div>`;
+  if (c.kind === "patient") {
+    const max = Math.max(c.hi_ml, c.gt_ml) * 1.1, p = (v) => `${(v / max) * 100}%`;
+    h += `<div class="stat"><div class="k">Tumour volume, 90% range</div><div class="v">${c.lo_ml}&ndash;${c.hi_ml} mL</div>
+      <div class="range"><div class="bar"></div><div class="ci" style="left:${p(c.lo_ml)};width:calc(${p(c.hi_ml)} - ${p(c.lo_ml)})"></div><div class="dot" style="left:${p(c.gt_ml)}"></div></div>
+      <div class="n">True ${c.gt_ml} mL (white tick), model ${c.pred_ml} mL. ${c.covered ? "Inside the range." : "Outside the range: one of the 10% the range is allowed to miss."}</div></div>`;
+    h += `<div class="stat"><div class="k">Seed disagreement</div><div class="v">${(c.disagree * 100).toFixed(0)}%</div>
+      <div class="n">of the predicted tumour. ${c.flagged ? '<span class="badge warn">Flagged for review</span> top 10% of test patients.' : '<span class="badge ok">Not flagged</span>'}</div></div>`;
+  } else {
+    h += `<div class="stat"><div class="k">Planted size</div><div class="v">${c.gt_ml} mL</div><div class="n">Donor ${c.donor}, a validation patient the model never trained on.</div></div>`;
+    h += `<p class="note">${c.note}</p>`;
+  }
+  el.innerHTML = h;
+}
+
+fetch("data.json").then(r => r.json()).then(d => {
+  data = d; const nav = $("cases");
+  for (const [kind, title] of [["patient", "Test patients"], ["planted", "Planted tumours"]]) {
+    const list = d.cases.filter(c => c.kind === kind); if (!list.length) continue;
+    nav.insertAdjacentHTML("beforeend", `<div class="group">${title}</div>`);
+    for (const c of list) {
+      const b = document.createElement("button"); b.className = "case"; b.type = "button"; b.dataset.key = c.key;
+      b.innerHTML = `<div class="t">${c.label}</div><div class="s">Dice ${c.dice.toFixed(3)} &middot; ${c.gt_ml} mL${c.flagged ? " &middot; flagged" : ""}</div>`;
+      b.onclick = () => select(c); nav.appendChild(b);
+    }
+  }
+  select(d.cases[0]);
+});
+$("z").oninput = draw;
+["oTruth", "oPred", "oDis"].forEach(id => $(id).onchange = draw);
+document.querySelectorAll("[data-ch]").forEach(b => b.onclick = () => {
+  ch = b.dataset.ch; document.querySelectorAll("[data-ch]").forEach(x => x.setAttribute("aria-pressed", x === b)); draw();
+});
+const root = document.documentElement;
+function setTheme(t) { root.dataset.theme = t; $("theme").textContent = t === "dark" ? "Light" : "Dark"; try { localStorage.setItem("theme", t); } catch (e) {} if (cur) draw(); }
+let saved = null; try { saved = localStorage.getItem("theme"); } catch (e) {}
+setTheme(saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+$("theme").onclick = () => setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+</script>
+</body>
+</html>

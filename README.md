@@ -18,6 +18,10 @@ shift between datasets, and [Round 4](#round-4-the-full-budget-rerun) reran the 
 with 40 times the training on a GPU. [Round 5](#round-5-budget-less-data-calibration-and-cheap-gains)
 traced the gate effect across training budgets and smaller training sets, checked calibration,
 tested whether the models can flag their own failures, and tried four cheap accuracy gains.
+[Round 6](#round-6-guaranteed-volume-ranges-and-planted-tumours) gave each patient a tumour
+volume range with a coverage guarantee, and planted real tumours at different sizes into other
+patients' scans to ask why small tumours fail. A [demo page](docs/) shows the models' output
+patient by patient.
 
 **In one paragraph:** attention gates never improved Dice. At short training they trimmed false
 alarms at the tumour edge, and under a shift between datasets they cut stray false alarms by
@@ -27,7 +31,9 @@ threshold in disguise. The VGG vs InceptionV3 gap is an input-size effect. Train
 mattered more than any of these choices. Gates stay within 0.005 Dice of plain models at every
 budget and with as little as 10% of the training patients. The models are sharp but not
 calibrated in the boundary zone, and disagreement between three seeds is a strong warning sign
-for the patients they get wrong.
+for the patients they get wrong. Volume ranges with a 90% guarantee hold on the same dataset
+and collapse on a new one. Planted tumours show Dice falling from 0.88 at 80 mL to 0.47 at 5 mL,
+and naturally small tumours are harder still at the same size.
 
 ![Best case for the gates](figures/hero_false_alarms.png)
 
@@ -481,6 +487,62 @@ The new training (27 runs) and the inference pass ran on Kaggle's two T4 GPUs in
    second dataset, 24 of the 110 LGG patients score below 0.3 Dice with the MSD-trained models,
    mostly small tumours and patients with many far false alarms.
 
+## Round 6: guaranteed volume ranges and planted tumours
+
+Round 6 was written down in [PREREGISTRATION.md](PREREGISTRATION.md) on 2026-11-25, with an
+addendum the same day before the planting grid ran. It trains nothing: it reuses the round 3 and
+round 4 models and runs on a laptop CPU. It asks two questions. Can the model give each patient a
+tumour volume range that is right 90% of the time? And is "small tumours fail" about size
+itself, or about the kind of tumour that happens to be small?
+
+![Round 6](figures/round6.png)
+
+| | Pre-registered claim | Verdict |
+|---|---|---|
+| H20a | 90% volume ranges from VGG-16 cover at least 85% of MSD test patients | **Supported**, narrowly: 85.5% |
+| H20b | InceptionV3 ranges hold on MSD test but cover under 80% on the LGG dataset | **Supported**: 88.9% and 26.4% |
+| H20c | Recalibrating on 20 LGG patients restores at least 85% coverage | **Supported**: 90.8%, but the ranges are useless (median 325 mL) |
+| H20d | Weighted conformal fixes LGG with MSD calibration only | **Not supported**: 67.3% |
+| H20e | Scaling the score by seed disagreement keeps coverage and narrows ranges by 10% | **Supported**: 88.0%, 11% narrower |
+| H21a | Planted tumours at their own size score like real ones (within 0.05 Dice) | **Supported**: 0.043, over 3 bins |
+| H21b | Planted Dice at 5 mL is at least 0.05 below that at 80 mL | **Supported**: 0.342 lower [0.285, 0.402] |
+| H21c | Naturally small and naturally large donors score within 0.02 at every size | **Not supported**: small donors lower at all five sizes |
+
+1. **Volume ranges (split conformal prediction).** Each patient's predicted volume (mean of
+   three seeds) gets a range sized so that, on 53 validation patients, the true volume falls
+   inside it for 90% of them. On the 117 test patients the VGG-16 ranges cover 85.5%, with a
+   median width of 30 mL. That passes the 85% bar, but only just. The guarantee assumes test
+   patients look like the calibration patients, and the LGG dataset shows what happens when
+   they do not: coverage falls to 26%. Recalibrating on 20 LGG patients brings it back to 91%,
+   but only by making the ranges so wide (median 325 mL) that they say almost nothing. Weighting
+   the MSD calibration patients to look like LGG ones gets to 67%.
+2. **Seed disagreement makes the ranges fairer.** Dividing the score by how much the three
+   seeds disagree gives confident patients a tighter range and disputed ones a wider one. Coverage
+   stays at 88% and the median range is 11% narrower (27 mL).
+3. **Planting tumours.** A real tumour from a validation patient is cut out, rescaled, matched
+   in brightness to its new surroundings, and blended into a test patient's scan at least 20 mm
+   from that patient's own tumour. 1,017 of 1,287 planned tumours found a spot that fits. Planted
+   at their own size they score within 0.043 Dice of real tumours of similar volume, so the
+   recipe passes its own realism check (though only 3 volume bins had enough plants to compare).
+4. **Size itself matters a lot.** The same donor shapes score 0.88 Dice at 80 mL and 0.47 at
+   5 mL, averaged over donors. This matters because the test set barely covers small tumours:
+   only 7 of the 117 are under 20 mL, so the headline 0.90 Dice says little about them.
+5. **But it is not only size.** Donors that were small to begin with score 0.04 to 0.15 lower
+   than donors that were large, at every target size, with the biggest gap at 5 mL (0.40 against
+   0.55). Small real tumours look different from shrunken large ones, and that difference also
+   hurts. A planted 10 mL tumour is missed entirely (Dice under 0.1) 12% of the time, and those
+   deeper in the brain score slightly worse (Spearman -0.21).
+
+**Demo.** [docs/](docs/) is a static page for looking at the models' output patient by patient:
+six test patients (the two worst, a small tumour done well, a typical one, the largest, and a
+bad case the disagreement flag missed) and two planted tumours, with slice-by-slice FLAIR and
+T1gd, the true outline, the prediction, where the seeds disagree, Dice, and the 90% volume range.
+Everything is precomputed, so it needs no server or model. To open it locally:
+
+```bash
+python -m http.server 8781 --directory docs
+```
+
 The environment that ran rounds 1 to 3 is pinned in
 [requirements-lock.txt](requirements-lock.txt) (Python 3.13.7, CPU PyTorch 2.14.0).
 
@@ -507,6 +569,12 @@ The environment that ran rounds 1 to 3 is pinned in
 - **Failure flagging is tested on one model family.** The disagreement flag in round 5 uses
   three seeds of one VGG-16 setup on one split; how well it transfers to other models or to the
   LGG set was not checked.
+- **Planted tumours are not real tumours.** They pass a realism check at their own size, but
+  shrinking a tumour to 5 mL is not the same as a tumour that grew to 5 mL, as H21c shows. The
+  planting results use one seed of one model, and large plants fit in fewer brains (57 of 117
+  at 80 mL), so the 80 mL numbers come from roomier brains.
+- **The volume guarantee is on average, not per patient.** Conformal coverage holds over
+  patients like the calibration set; on a new scanner or population it broke (26% on LGG).
 - **One split.** All MSD results use one patient split; there is no cross-validation.
 - **Sub-regions only partly covered.** Round 2 adds enhancing tumour; the tumour core was not
   tried.
@@ -596,6 +664,17 @@ runs. Put `runs/r5_*` into `runs/` and its `round5/` folder into `results/round5
 python scripts/analyze_round5.py
 ```
 
+Round 6 runs on CPU from the round 3 and round 4 models. `round6_val.py` scores the validation
+patients (the calibration set), `plant.py` runs the planting grid (about 4 hours on 12 threads,
+resumable), and `build_demo.py` writes the demo into `docs/`:
+
+```bash
+python scripts/round6_val.py
+python scripts/plant.py --threads 12
+python scripts/analyze_round6.py
+python scripts/build_demo.py
+```
+
 The exact package versions used are in `requirements-lock.txt`.
 
 `prepare_data.py` streams volumes out of the tar without extracting it and writes about 6 GB of
@@ -624,6 +703,7 @@ scripts/kaggle/ the Kaggle notebooks for rounds 4 and 5 and the slice hashes the
 tests/          unit tests
 results/        summary tables, paired comparisons, verdicts, logs
 figures/        README figures
+docs/           the static demo page and its precomputed images
 runs/<name>/    per-run config, training log, per-patient test metrics
 PREREGISTRATION.md
 ```
@@ -640,6 +720,7 @@ Model weights are not committed (125 MB each); rerun the queue to regenerate the
 | 31 Oct to 1 Nov 2026 | Round 2: threshold vs loss, enhancing tumour, skull-on scans, input size |
 | 2 to 3 Nov 2026 | Rounds 3 and 4: inside the gates, dataset shift, full-budget rerun on Kaggle GPUs |
 | 25 Nov 2026 | Round 5: training budget, less data, calibration, failure flagging, cheap gains |
+| 25 to 26 Nov 2026 | Round 6: conformal volume ranges, planted tumours, demo page |
 
 Each round's hypotheses were written down before its runs; the dates are in
 [PREREGISTRATION.md](PREREGISTRATION.md).
@@ -662,6 +743,9 @@ project above is pixel-level segmentation and shares no code or data with it.
 - Abraham and Khan (2019). A Novel Focal Tversky Loss Function with Improved Attention U-Net for
   Lesion Segmentation. ISBI.
 - Lin et al. (2017). Focal Loss for Dense Object Detection. ICCV.
+- Angelopoulos and Bates (2023). Conformal Prediction: A Gentle Introduction. *Foundations and
+  Trends in Machine Learning* 16(4).
+- Tibshirani, Barber, Candes and Ramdas (2019). Conformal Prediction Under Covariate Shift. NeurIPS.
 - Buda, Saha and Mazurowski (2019). Association of genomic subtypes of lower-grade gliomas with
   shape features automatically extracted by a deep learning algorithm. *Computers in Biology and
   Medicine* 109. LGG segmentation data licence CC BY-NC-SA 4.0.

@@ -444,9 +444,76 @@ def round5():
     plt.close(fig)
 
 
+def round6():
+    """Round 6: conformal coverage by setting, planted-tumour Dice by size and donor kind, a location map."""
+    Cf, Pf = ROOT / "results" / "round6_coverage.csv", ROOT / "results" / "round6" / "plants.csv"
+    if not (Cf.exists() and Pf.exists()):
+        return
+    C, P = pd.read_csv(Cf), pd.read_csv(Pf)
+    P = P[P.placed == True]  # noqa: E712
+    fig, ax = plt.subplots(1, 3, figsize=(15, 4.6), gridspec_kw={"width_ratios": [1.15, 1, 1]})
+
+    a = ax[0]
+    short = ["VGG-16, MSD test", "InceptionV3, MSD test", "InceptionV3, LGG (shift)", "VGG-16, spread-scaled",
+             "LGG, 20 LGG calibrators", "LGG, weighted"]
+    y = np.arange(len(C))[::-1]
+    cols = [PLAIN if c >= 0.85 else GATED for c in C.coverage]
+    a.barh(y, C.coverage, color=cols, height=0.6)
+    a.axvline(0.9, color=INK, lw=1, ls=":")
+    for yi, c, w in zip(y, C.coverage, C.median_width_ml):
+        a.text(c + 0.01, yi, f"{c:.0%}, median width {w:.0f} mL", va="center", color=MUTED, fontsize=8)
+    a.set_yticks(y, short[:len(C)], fontsize=9)
+    a.set_xlim(0, 1.35)
+    a.set_xticks([0, 0.25, 0.5, 0.75, 0.9], ["0", "25%", "50%", "75%", "90%"])
+    a.set_xlabel("Share of patients whose true volume falls in the 90% range")
+    a.tick_params(left=False)
+    a.set_title("The volume guarantee holds, until the scanner changes", color=INK, fontsize=10, loc="left")
+
+    a = ax[1]
+    real = pd.read_csv(ROOT / "runs" / "r4_vgg16_plain_dice_bce_s0" / "test_metrics.csv")
+    for kind, c, lab in [("small", GATED, "donor naturally small (<= 66 mL)"), ("large", PLAIN, "donor naturally large (>= 143 mL)")]:
+        g = P[P.kind == kind].groupby("target_ml").dice_s0
+        m, se = g.mean(), g.sem()
+        a.errorbar(m.index, m.values, 1.96 * se.values, fmt="o-", color=c, lw=2, ms=6, capsize=3, mec=BG, label=lab)
+    bins = [0, 10, 20, 40, 80, 1e9]
+    rb = pd.cut(real.gt_ml, bins)
+    rm = real.groupby(rb, observed=True).agg(v=("gt_ml", "median"), d=("dice", "mean"), n=("dice", "size"))
+    a.plot(rm.v, rm.d, "s", color=MUTED, ms=6, label="real test tumours (median volume per bin)")
+    a.set_xscale("log")
+    a.set_xticks([5, 10, 20, 40, 80, 160], ["5", "10", "20", "40", "80", "160"])
+    a.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+    a.set_xlabel("Tumour volume (mL)")
+    a.set_ylabel("Dice, VGG-16 seed 0")
+    a.grid(color=GRID, lw=0.5)
+    a.legend(frameon=False, fontsize=8, loc="lower right", labelcolor=INK)
+    a.set_title("Planted tumours: smaller is harder, and small donors harder still", color=INK, fontsize=10, loc="left")
+
+    a = ax[2]
+    t = P[P.target_ml == 10]
+    # same turn as the demo sprites (rot90): front of the head up
+    sc = a.scatter(t.rel_y, t.rel_x, c=t.dice_s0, cmap="viridis", vmin=0, vmax=1, s=16, lw=0)
+    a.set_aspect("equal")
+    a.set_xticks([])
+    a.set_yticks([])
+    for s in a.spines.values():
+        s.set_visible(False)
+    cb = fig.colorbar(sc, ax=a, fraction=0.046, pad=0.02)
+    cb.set_label("Dice of a planted 10 mL tumour", color=MUTED)
+    cb.outline.set_visible(False)
+    a.set_title("Where in the brain a 10 mL tumour lands", color=INK, fontsize=10, loc="left")
+    a.text(0.5, -0.04, "position in the brain's bounding box, seen from above, front at the top", transform=a.transAxes, ha="center",
+           va="top", color=MUTED, fontsize=8)
+    fig.suptitle("Round 6: guaranteed volume ranges and planted tumours, CPU only, no new training",
+                 x=0.01, ha="left", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(FIG / "round6.png", dpi=130)
+    plt.close(fig)
+
+
 def main():
     FIG.mkdir(exist_ok=True)
     round5()
+    round6()
     S = pd.read_csv(ROOT / "results" / "summary.csv")
     curves(set(S.run))
     threshold_curve()
