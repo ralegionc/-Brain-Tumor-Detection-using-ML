@@ -9,6 +9,7 @@ import argparse
 import json
 import math
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -29,6 +30,7 @@ def run_name(a):
     post = "" if a.in_scale == 1 else f"_x{a.in_scale}"
     post += f"_c{a.context}" if a.context else ""
     post += f"_f{round(a.train_frac * 100)}" if a.train_frac < 1 else ""
+    post += f"_{Path(a.bank).name}" if a.bank else ""
     return f"{pre}{a.encoder}_{'ag' if a.attention else 'plain'}_{a.loss}_s{a.seed}{post}"
 
 
@@ -87,6 +89,8 @@ def main(argv=None):
     ap.add_argument("--ram", action="store_true", help="read the training arrays into memory first")
     ap.add_argument("--context", type=int, default=0, choices=[0, 1], help="1: 2.5D, add the slices above and below")
     ap.add_argument("--train-frac", type=float, default=1.0, help="train on this share of the training patients")
+    ap.add_argument("--bank", default="", help="folder of extra training slices (scripts/build_bank.py)")
+    ap.add_argument("--bank-frac", type=float, default=0.25, help="chance that a sample is drawn from the bank")
     a = ap.parse_args(argv)
     torch.set_num_threads(a.threads)
 
@@ -115,8 +119,11 @@ def main(argv=None):
     pool = (np.flatnonzero(train.index.case.isin(train_patients(train.index.case, a.train_frac)))
             if a.train_frac < 1 else None)  # rows of the kept patients
     val_idx = np.random.default_rng(123).choice(len(val), min(256, len(val)), replace=False)
+    bank = Slices("train", Path(a.bank), a.target, CHANNELS.get(a.data), a.context) if a.bank else None
     if a.ram:
         train.x, train.y = np.array(train.x), np.array(train.y)  # a copy; asarray keeps the memmap
+        if bank is not None:
+            bank.x, bank.y = np.array(bank.x), np.array(bank.y)
     rng = np.random.default_rng(a.seed)
     step, log = 0, []
     amp = a.amp and DEVICE == "cuda"
@@ -138,6 +145,11 @@ def main(argv=None):
         model.train()
         pick = rng.integers(0, len(train) if pool is None else len(pool), a.batch)
         x, y = train.batch(pick if pool is None else pool[pick], rng)
+        if bank is not None:  # replace a random share of the batch with planted-tumour slices
+            nb = int((rng.random(a.batch) < a.bank_frac).sum())
+            if nb:
+                bx, by = bank.batch(rng.integers(0, len(bank), nb), rng)
+                x, y = torch.cat([x[nb:], bx]), torch.cat([y[nb:], by])
         x, y = x.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
         with torch.autocast("cuda", dtype=torch.float16, enabled=amp):
             logits = model(x)

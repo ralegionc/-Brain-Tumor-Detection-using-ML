@@ -7,7 +7,8 @@ are unchanged.
 
     python scripts/plant.py [--seeds 0] [--limit N] [--threads 12]
 Writes results/round6/plants.csv (one row per planted tumour) and a few example volumes for the
-demo in results/round6/examples.npz.
+demo in results/round6/examples.npz. Round 7 scores other models on the same plants:
+    python scripts/plant.py --seeds 0 1 2 --pattern r7_vgg16_plain_dice_bce_s{}_bank_small --out plants_S.csv
 """
 import argparse
 import sys
@@ -27,6 +28,7 @@ OUT = ROOT / "results" / "round6"
 SIZES = [5, 10, 20, 40, 80]
 SMALL_Q, LARGE_Q = 25, 75  # donor groups: smallest and largest quarter (Round 6 addendum)
 RING_MM, MIN_GAP_MM, SCORE_MM = 3.0, 20.0, 10.0
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def volume(ds, rows):
@@ -112,7 +114,8 @@ def predict(model, x, zs, bs=32):
     out = []
     for i in range(0, len(zs), bs):
         b = torch.from_numpy(np.ascontiguousarray(x[:, zs[i:i + bs]].transpose(1, 0, 2, 3)))
-        out.append(torch.sigmoid(model(b))[:, 0].numpy())
+        dev = next(model.parameters()).device
+        out.append(torch.sigmoid(model(b.to(dev)).float())[:, 0].cpu().numpy())
     return np.concatenate(out)
 
 
@@ -135,15 +138,17 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="+", default=[0])
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--threads", type=int, default=12)
+    ap.add_argument("--pattern", default="r4_vgg16_plain_dice_bce_s{}", help="run folder, {} is the seed")
+    ap.add_argument("--out", default="plants.csv", help="file name inside results/round6/")
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
     OUT.mkdir(parents=True, exist_ok=True)
     models = {}
     for s in a.seeds:
         m = SegNet("vgg16", False, pretrained=False)
-        m.load_state_dict(torch.load(ROOT / "runs" / f"r4_vgg16_plain_dice_bce_s{s}" / "final.pt", weights_only=True,
+        m.load_state_dict(torch.load(ROOT / "runs" / a.pattern.format(s) / "final.pt", weights_only=True,
                                      map_location="cpu"))
-        models[s] = m.eval()
+        models[s] = m.to(DEVICE).eval()
     ds = Slices("test")
     sp = ds.spacing
     vox_ml = float(np.prod(sp)) / 1000
@@ -153,7 +158,7 @@ def main():
     large = [d for d in D if d["ml"] >= hi_ml]
     print(f"{len(D)} donors, {len(small)} small (<= {lo_ml:.0f} mL), {len(large)} large (>= {hi_ml:.0f} mL)", flush=True)
     rng = np.random.default_rng(2026)
-    f = OUT / "plants.csv"
+    f = OUT / a.out
     done = pd.read_csv(f) if f.exists() else pd.DataFrame(columns=["recipient"])
     rows, examples = done.to_dict("records"), {}
     for k, (case, rr) in enumerate(ds.cases()):
@@ -191,7 +196,7 @@ def main():
         pd.DataFrame(rows).to_csv(f, index=False)
         last = rows[-1]
         print(f"{k} {case} done, last dice {last.get(f'dice_s{a.seeds[0]}', float('nan')):.3f}", flush=True)
-    if examples:
+    if examples and a.out == "plants.csv":
         np.savez_compressed(OUT / "examples.npz", **examples)
 
 

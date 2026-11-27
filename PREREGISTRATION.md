@@ -395,3 +395,13 @@ uncertain one, because the bank teaches small blended shapes and the test set ha
 tumours; H22e holds only partly. The planted-grid hypotheses use the same planting recipe for
 training and testing, so a model could learn the blend itself; H22b and H22c, on real tumours,
 are the ones that cannot be gamed that way.
+
+### Round 7 addendum, 2026-11-27, before any round 7 training
+
+A smoke test of the bank builder on the first 3 training patients (no model involved) placed
+only 4 of 24 native-size plants: a full-size tumour rarely fits in a brain that already holds
+one, 20 mm away. The builder now redraws the donor until a plant fits, up to 60 draws per
+recipient, for both banks. With this, all 48 plants on the first 6 patients were placed in both
+banks. The native bank therefore leans towards the donors that fit (median 41 mL on those 6
+patients, against 94 mL for all donors); its volume spread is reported with the results. The
+banks are built inside the Kaggle notebook, not uploaded.
