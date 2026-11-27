@@ -1,0 +1,27 @@
+{
+ "size": 128,
+ "spacing_mm": [
+  1.75,
+  1.75,
+  1.0
+ ],
+ "channels": [
+  "FLAIR",
+  "T1gd",
+  "T2w"
+ ],
+ "counts": {
+  "train": 12560
+ },
+ "x_dtype": "float16",
+ "y_dtype": "uint8",
+ "bank": {
+  "kind": "small",
+  "plants": 2512,
+  "tried": 2554,
+  "per": 8,
+  "keep": 5,
+  "tries": 60,
+  "seed": 7001
+ }
+}

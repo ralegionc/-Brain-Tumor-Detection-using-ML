@@ -510,10 +510,57 @@ def round6():
     plt.close(fig)
 
 
+def round7():
+    """Planted-tumour training: gains on planted tumours, none on real small ones."""
+    import importlib
+    a7 = importlib.import_module("analyze_round7")
+    R, _ = a7.real()
+    P = a7.plants()
+    key = P["B"].index.intersection(P["S"].index).intersection(P["N"].index)
+    arms = [("B", MUTED, "baseline (round 4)"), ("N", GATED, "trained with full-size plants"),
+            ("S", PLAIN, "trained with small plants")]
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4.4))
+    a = ax[0]
+    for arm, c, lab in arms:
+        d = P[arm].loc[key].reset_index()
+        d = d[d.kind != "native"]
+        g = d.groupby("target_ml").dice
+        m, se = g.mean(), g.sem()
+        a.errorbar(m.index, m.values, 1.96 * se.values, fmt="o-", color=c, lw=2, ms=6, capsize=3, mec=BG, label=lab)
+    a.set_xscale("log")
+    a.set_xticks([5, 10, 20, 40, 80], ["5", "10", "20", "40", "80"])
+    a.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+    a.set_ylim(0.3, 1)
+    a.set_xlabel("Planted tumour volume (mL)")
+    a.set_ylabel("Dice, mean of 3 seeds")
+    a.grid(color=GRID, lw=0.5)
+    a.legend(frameon=False, fontsize=8, loc="lower right", labelcolor=INK)
+    a.set_title("Planted tumours: a huge gain, even without small plants", color=INK, fontsize=10, loc="left")
+
+    a = ax[1]
+    gt = R["B"].gt_ml
+    q = pd.qcut(gt, 4, labels=["smallest quarter", "second", "third", "largest quarter"])
+    x = np.arange(4)
+    for k, (arm, c, lab) in enumerate(arms):
+        g = R[arm].dice.groupby(q, observed=True)
+        m, se = g.mean(), g.sem()
+        a.errorbar(x + (k - 1) * 0.18, m.values, 1.96 * se.values, fmt="o", color=c, ms=7, capsize=3, mec=BG, label=lab)
+    a.set_xticks(x, [f"{l}\n{gt[q == l].median():.0f} mL median" for l in q.cat.categories], fontsize=8.5)
+    a.set_ylabel("Dice, mean of 3 seeds")
+    a.grid(color=GRID, lw=0.5, axis="y")
+    a.set_title("Real test tumours: no change at any size", color=INK, fontsize=10, loc="left")
+    fig.suptitle("Round 7: training on planted small tumours teaches the planting, not small tumours",
+                 x=0.01, ha="left", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(FIG / "round7.png", dpi=130)
+    plt.close(fig)
+
+
 def main():
     FIG.mkdir(exist_ok=True)
     round5()
     round6()
+    round7()
     S = pd.read_csv(ROOT / "results" / "summary.csv")
     curves(set(S.run))
     threshold_curve()

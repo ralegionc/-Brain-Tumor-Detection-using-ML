@@ -20,8 +20,10 @@ What I found, in short:
   brain) gave no real improvement in any setting tested. Training longer mattered far more.
 - **Small tumours are the weak spot.** When I took real tumours, shrank them and placed them in
   other patients' scans, the score fell from about 0.88 for a tumour the size of two golf balls
-  (80 mL) to 0.47 for one the size of a teaspoon (5 mL). The test patients had almost no small tumours, so the headline
-  score hides this.
+  (80 mL) to 0.47 for one the size of a teaspoon (5 mL). The test patients had almost no small
+  tumours, so the headline score hides this. Training on planted small tumours did not fix it: the
+  model got very good at planted tumours and no better at real ones, because it learned to spot
+  the pasting rather than the tumour.
 - **The model can warn when it might be wrong.** I trained it three times from different random
   starts. Where the three copies disagree, it is often wrong, and flagging the 10% most-disputed
   patients catches more than half of the worst results.
@@ -54,7 +56,8 @@ traced the gate effect across training budgets and smaller training sets, checke
 tested whether the models can flag their own failures, and tried four cheap accuracy gains.
 [Round 6](#round-6-guaranteed-volume-ranges-and-planted-tumours) gave each patient a tumour
 volume range with a coverage guarantee, and planted real tumours at different sizes into other
-patients' scans to ask why small tumours fail. A [demo page](https://ralegionc.github.io/-Brain-Tumor-Detection-using-ML/) shows the models' output
+patients' scans to ask why small tumours fail. [Round 7](#round-7-training-on-planted-small-tumours)
+trained on such planted small tumours to see whether that fixes them. A [demo page](https://ralegionc.github.io/-Brain-Tumor-Detection-using-ML/) shows the models' output
 patient by patient.
 
 **In one paragraph:** attention gates never improved Dice. At short training they trimmed false
@@ -67,7 +70,9 @@ budget and with as little as 10% of the training patients. The models are sharp 
 calibrated in the boundary zone, and disagreement between three seeds is a strong warning sign
 for the patients they get wrong. Volume ranges with a 90% guarantee hold on the same dataset
 and collapse on a new one. Planted tumours show Dice falling from 0.88 at 80 mL to 0.47 at 5 mL,
-and naturally small tumours are harder still at the same size.
+and naturally small tumours are harder still at the same size. Training on planted small tumours
+made planted ones easy (0.56 to 0.91 Dice at 5 to 10 mL) and did nothing for real small tumours:
+the model learned the planting, not the size.
 
 ![Best case for the gates](figures/hero_false_alarms.png)
 
@@ -577,6 +582,47 @@ Everything is precomputed, so it needs no server or model. To open it locally:
 python -m http.server 8781 --directory docs
 ```
 
+## Round 7: training on planted small tumours
+
+Round 7 was written down in [PREREGISTRATION.md](PREREGISTRATION.md) on 2026-11-27, with an
+addendum before any training. Round 6 showed small tumours are the weak spot and that the test
+set has almost none. Round 7 asked the obvious follow-up: if the planting recipe from round 6 is
+used to add small tumours to the training scans, does the model get better at real small ones?
+
+Two banks of planted slices were built from the 314 training patients only: about 2,500 plants
+each, 12,000 slices. In the **small** bank tumours were shrunk to 3 to 30 mL (median 9.6 mL).
+The **full-size** bank is a control: tumours planted at their own size (median 38 mL), so it
+has the copy-paste but not the shrinking. VGG-16 was trained with the round 4 recipe and three
+seeds per bank, with a quarter of each batch drawn from the bank, on Kaggle's two T4 GPUs (4.75
+hours including both banks and three planting grids). The round 4 models are the baseline.
+
+![Round 7](figures/round7.png)
+
+| | Pre-registered claim | Verdict |
+|---|---|---|
+| H22a | No harm: overall Dice no more than 0.005 lower (90% CI) | **Supported**: -0.001 [-0.003, +0.001] |
+| H22b | Real small tumours gain at least 0.01 Dice | **Not supported**: -0.001 [-0.007, +0.007] |
+| H22c | Small plants beat full-size plants on real small tumours | **Not supported**: +0.005 [-0.000, +0.012] |
+| H22d | Planted 5 and 10 mL tumours (large donors) gain at least 0.10 | **Supported**: +0.35 (0.56 to 0.91) |
+| H22e | The gain carries over to naturally small donors | **Supported**: +0.41 [+0.37, +0.44] |
+| H22f | Distant false alarms rise by less than 0.5 mL | **Supported**: +0.08 mL |
+
+1. **Planted tumours became easy.** At 5 and 10 mL, Dice on planted tumours jumped from 0.56 to
+   0.91, and none was missed entirely (13% were before). Naturally small donors, the harder kind
+   in round 6, gained even more (0.48 to 0.88).
+2. **Real small tumours did not change.** On the 30 smallest real test tumours (median 28 mL),
+   Dice was 0.852 before and 0.851 after. The CI rules out a gain of 0.01. Missed lesions went
+   from 22 to 21 out of 167. Overall Dice and false alarms barely moved.
+3. **The control gives it away.** The full-size model never saw a planted tumour under 7.5 mL, yet it
+   scores 0.82 to 0.85 on 5 mL plants, against 0.47 for the baseline. What both models learned
+   is the look of a planted tumour (the blended edge, the brightness match), not how to find
+   small tumours. The planted test stops being a fair test once training has seen the same
+   recipe.
+4. **What this means.** Copy-paste augmentation is a popular fix for rare small lesions. Here it
+   made the synthetic benchmark look solved and left the real problem where it was. My guess
+   before the run was that the planted gain would be real and the real-tumour gain uncertain;
+   the second half was right, the first half was mostly the recipe being learned.
+
 The environment that ran rounds 1 to 3 is pinned in
 [requirements-lock.txt](requirements-lock.txt) (Python 3.13.7, CPU PyTorch 2.14.0).
 
@@ -609,6 +655,9 @@ The environment that ran rounds 1 to 3 is pinned in
   at 80 mL), so the 80 mL numbers come from roomier brains.
 - **The volume guarantee is on average, not per patient.** Conformal coverage holds over
   patients like the calibration set; on a new scanner or population it broke (26% on LGG).
+- **Round 7 rests on one planting recipe.** Other ways of making synthetic small tumours (better
+  blending, generative models) might transfer to real tumours where this one did not. The real
+  small-tumour test has 30 patients; it rules out a gain of 0.01 Dice, not a smaller one.
 - **One split.** All MSD results use one patient split; there is no cross-validation.
 - **Sub-regions only partly covered.** Round 2 adds enhancing tumour; the tumour core was not
   tried.
@@ -709,6 +758,15 @@ python scripts/analyze_round6.py
 python scripts/build_demo.py
 ```
 
+Round 7 is `scripts/kaggle/train_kernel7.py`, a two-GPU notebook that builds both banks with
+`scripts/build_bank.py`, trains the six runs with `seg.train --bank`, and reruns the planting grid
+for each arm with `plant.py --pattern`. Put `runs/r7_*` into `runs/` and the `plants/` files and
+bank metadata into `results/round7/`, then:
+
+```bash
+python scripts/analyze_round7.py
+```
+
 The exact package versions used are in `requirements-lock.txt`.
 
 `prepare_data.py` streams volumes out of the tar without extracting it and writes about 6 GB of
@@ -755,6 +813,7 @@ Model weights are not committed (125 MB each); rerun the queue to regenerate the
 | 2 to 3 Nov 2026 | Rounds 3 and 4: inside the gates, dataset shift, full-budget rerun on Kaggle GPUs |
 | 25 Nov 2026 | Round 5: training budget, less data, calibration, failure flagging, cheap gains |
 | 25 to 26 Nov 2026 | Round 6: conformal volume ranges, planted tumours, demo page |
+| 27 Nov 2026 | Round 7: training on planted small tumours |
 
 Each round's hypotheses were written down before its runs; the dates are in
 [PREREGISTRATION.md](PREREGISTRATION.md).
