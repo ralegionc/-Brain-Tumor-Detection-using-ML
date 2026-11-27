@@ -1,5 +1,39 @@
 # Brain tumour segmentation: do attention gates and imbalance losses earn their keep?
 
+## In plain words
+
+Before surgery or radiotherapy, a doctor goes through a patient's MRI scan slice by slice and
+draws around the tumour. It is slow, and two doctors rarely draw exactly the same line. This
+project trains a computer model to do that drawing, then tests popular tricks that are said to
+make such models better.
+
+**[Try the demo](https://ralegionc.github.io/-Brain-Tumor-Detection-using-ML/)**: pick a patient,
+scroll through their scan, and compare the model's outline with the doctor's.
+
+What I found, in short:
+
+- **The model is good on typical tumours.** Its outline overlaps the doctor's by about 0.93 on a
+  scale from 0 to 1. Two doctors drawing the same tumour usually agree to about 0.75 to 0.85,
+  though the comparison flatters the model, which was trained to copy this dataset's doctors.
+- **The popular tricks did not help.** "Attention gates", an add-on meant to make the model focus
+  on the tumour, and special training rules for rare things (a tumour is a small part of the
+  brain) gave no real improvement in any setting tested. Training longer mattered far more.
+- **Small tumours are the weak spot.** When I took real tumours, shrank them and placed them in
+  other patients' scans, the score fell from about 0.88 for a tumour the size of two golf balls
+  (80 mL) to 0.47 for one the size of a teaspoon (5 mL). The test patients had almost no small tumours, so the headline
+  score hides this.
+- **The model can warn when it might be wrong.** I trained it three times from different random
+  starts. Where the three copies disagree, it is often wrong, and flagging the 10% most-disputed
+  patients catches more than half of the worst results.
+- **Its size estimates come with an honest range**, one that holds the true size for about 9
+  patients in 10. That promise broke on scans from a different dataset, which is a
+  reminder to check a model on new data before trusting it.
+
+Every test was written down before it was run ([PREREGISTRATION.md](PREREGISTRATION.md)), so the
+results could not be tuned to look good. The rest of this page is the technical write-up.
+
+## Technical summary
+
 A 2D U-Net for whole-tumour segmentation on brain MRI (BraTS, via the Medical Segmentation
 Decathlon), built three ways (VGG-16, VGG-19 and InceptionV3 encoders), with and without
 attention gates, and trained with six loss functions aimed at class imbalance. Every model is
