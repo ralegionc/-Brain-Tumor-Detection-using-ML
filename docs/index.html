@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tumour Segmentation Viewer</title>
+<title>Tumour Outline Viewer</title>
 <style>
 :root {
   --bg: #1a1a19; --panel: #232321; --ink: #f0efec; --muted: #c3c2b7; --faint: #8a897f; --grid: #3a3936;
@@ -15,7 +15,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
-h1 { font-size: 24px; margin: 0 0 4px; font-weight: 650; }
+h1 { font-size: 24px; margin: 0 0 4px; padding-right: 64px; font-weight: 650; }
 .lede { color: var(--muted); margin: 0 0 20px; max-width: 760px; }
 .lede a { color: var(--pred); }
 .layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
@@ -55,6 +55,19 @@ input[type=range] { width: 100%; accent-color: var(--pred); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); margin-top: 10px; }
 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
 .note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+.guide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 0 20px; padding: 0; list-style: none; counter-reset: step; }
+@media (max-width: 860px) { .guide { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .guide { grid-template-columns: 1fr; } }
+.guide li { background: var(--panel); border: 1px solid var(--grid); border-radius: 8px; padding: 10px 12px; font-size: 13.5px; color: var(--muted); counter-increment: step; }
+.guide li::before { content: counter(step); display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--pred); color: #fff; font-size: 12px; font-weight: 700; margin-right: 6px; }
+.guide b { color: var(--ink); }
+.case .w { color: var(--faint); font-size: 12.5px; margin-top: 2px; }
+.verdict { font-size: 14px; font-weight: 600; margin-left: 6px; }
+details.gloss { margin-top: 28px; max-width: 760px; background: var(--panel); border: 1px solid var(--grid); border-radius: 8px; padding: 10px 14px; }
+details.gloss summary { cursor: pointer; font-weight: 600; }
+details.gloss dt { font-weight: 600; margin-top: 10px; }
+details.gloss dd { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
 footer { color: var(--faint); font-size: 12.5px; margin-top: 28px; max-width: 760px; }
 footer a { color: var(--muted); }
 .theme { position: absolute; top: 16px; right: 16px; background: none; border: 1px solid var(--grid); color: var(--muted);
@@ -64,11 +77,17 @@ footer a { color: var(--muted); }
 <body>
 <button class="theme" id="theme" type="button">Light</button>
 <main>
-  <h1>What the tumour model sees</h1>
-  <p class="lede">Brain MRI from the Medical Segmentation Decathlon, segmented by three copies of the same
-  VGG-16 U-Net trained with different random seeds. Step through the slices, compare the prediction with the
-  radiologist's outline, and see where the three copies disagree. Every number comes from the
-  <a href="https://github.com/ralegionc/-Brain-Tumor-Detection-using-ML">project</a>; nothing runs in your browser except drawing.</p>
+  <h1>Can a computer outline a brain tumour?</h1>
+  <p class="lede">I trained a computer model to find brain tumours on MRI scans and draw around them, a job
+  doctors do by hand before surgery or radiotherapy. This page puts the model's drawing next to the one a
+  doctor made, so you can see where it gets it right and where it goes wrong. No medical knowledge needed.
+  Details are in the <a href="https://github.com/ralegionc/-Brain-Tumor-Detection-using-ML">project write-up</a>.</p>
+  <ol class="guide">
+    <li><b>Pick a patient</b> from the list. They range from the model's worst result to a typical one.</li>
+    <li><b>Drag the slider</b> under the scan to move through the head, one thin slice at a time. The front of the head is at the top.</li>
+    <li><b>Compare the colours.</b> White line: the doctor's outline. Blue: the model's guess. Red: where the model is unsure.</li>
+    <li><b>Read the scores</b> beside the scan: how well the two outlines match, and how big the model thinks the tumour is.</li>
+  </ol>
   <div class="layout">
     <nav class="cases" id="cases" aria-label="Cases"></nav>
     <section class="viewer">
@@ -78,24 +97,36 @@ footer a { color: var(--muted); }
           <div class="slice"><span>Slice</span><input id="z" type="range" min="0" value="0" aria-label="Slice"><span id="zl"></span></div>
           <div class="controls">
             <span class="seg" role="group" aria-label="Image">
-              <button type="button" data-ch="flair" aria-pressed="true">FLAIR</button><button type="button" data-ch="t1gd" aria-pressed="false">T1 + contrast</button>
+              <button type="button" data-ch="flair" aria-pressed="true" title="FLAIR scan: the tumour and swelling around it show up bright">Scan 1: FLAIR</button><button type="button" data-ch="t1gd" aria-pressed="false" title="T1 scan after a dye injection: the most active part of the tumour lights up">Scan 2: with dye</button>
             </span>
-            <label><input type="checkbox" id="oTruth" checked> Truth</label>
-            <label><input type="checkbox" id="oPred" checked> Prediction</label>
-            <label><input type="checkbox" id="oDis" checked> Disagreement</label>
+            <label><input type="checkbox" id="oTruth" checked> Doctor's outline</label>
+            <label><input type="checkbox" id="oPred" checked> Model's guess</label>
+            <label><input type="checkbox" id="oDis" checked> Unsure areas</label>
           </div>
           <div class="legend">
-            <span><i class="sw" style="background:var(--truth)"></i>Radiologist outline</span>
-            <span><i class="sw" style="background:var(--pred)"></i>Model (mean of 3 seeds, p &ge; 0.5)</span>
-            <span><i class="sw" style="background:var(--dis)"></i>Seeds disagree</span>
+            <span><i class="sw" style="background:var(--truth)"></i>Doctor's outline (the answer)</span>
+            <span><i class="sw" style="background:var(--pred)"></i>Model's guess</span>
+            <span><i class="sw" style="background:var(--dis)"></i>Unsure: the 3 trained copies disagree here</span>
           </div>
         </div>
         <div class="stats" id="stats"></div>
       </div>
     </section>
   </div>
+  <details class="gloss">
+    <summary>What do these words mean?</summary>
+    <dl>
+      <dt>MRI scan</dt><dd>A 3D picture of the inside of the head, made with magnets instead of X-rays. It is stored as a stack of thin slices, which is what the slider moves through.</dd>
+      <dt>Scan 1 (FLAIR) and Scan 2 (with dye)</dt><dd>Two kinds of MRI taken of the same patient. In FLAIR the tumour and the swelling around it look bright. In the dye scan the most active part of the tumour lights up. The model looks at both at once.</dd>
+      <dt>Overlap score (Dice)</dt><dd>How much the model's outline and the doctor's outline cover the same area, from 0 (no overlap) to 1 (identical). Two doctors outlining the same tumour typically agree to about 0.75 to 0.85 (Menze et al. 2015).</dd>
+      <dt>Three trained copies</dt><dd>The same model was trained three times from different random starting points. Where the three copies give different answers, the model is unsure, and that is shown in red.</dd>
+      <dt>Flagged for review</dt><dd>The 10% of patients where the copies disagree most. The model cannot know when it is wrong, but disagreement is a good warning sign: the flag catches more than half of its worst results.</dd>
+      <dt>Size range</dt><dd>The model's estimate of the tumour's volume, given as a range rather than one number. Ranges built this way contain the true size for about 9 patients out of 10. For scale, a teaspoon holds 5 mL and a golf ball about 40 mL.</dd>
+      <dt>Planted tumour</dt><dd>A real tumour cut out of one patient's scan, shrunk, and blended into another patient's scan. Because its size is chosen, it shows how the model copes with small tumours, which are rare in this dataset.</dd>
+    </dl>
+  </details>
   <footer>Images: Medical Segmentation Decathlon, Task01 BrainTumour (BraTS 2016/2017), CC BY-SA 4.0.
-  The volume range is a split-conformal 90% interval calibrated on 53 validation patients. Planted tumours are
+  The size range is a split-conformal 90% interval calibrated on 53 validation patients. Planted tumours are
   real tumours from validation patients, rescaled and blended into another patient's scan. Not for clinical use.</footer>
 </main>
 <script>
@@ -161,19 +192,38 @@ async function draw() {
   }
 }
 
+const WHY = {
+  "Worst case": "The patient the model got most wrong.",
+  "Second worst": "Another hard case.",
+  "Small tumour, done well": "Small tumours are usually harder; this one went well.",
+  "Typical patient": "A middle-of-the-pack result.",
+  "Largest tumour": "The biggest tumour in the test set.",
+  "Bad, but not flagged": "A poor result the warning flag missed.",
+  "Planted 10 mL tumour": "Shrunk to about two teaspoons and moved into another scan.",
+  "Planted 5 mL tumour": "Shrunk to a teaspoon and moved into another scan.",
+};
+function grade(d) {
+  const css = getComputedStyle(document.documentElement);
+  if (d >= 0.9) return ["excellent", css.getPropertyValue("--ok")];
+  if (d >= 0.8) return ["good", css.getPropertyValue("--ok")];
+  if (d >= 0.5) return ["partial", css.getPropertyValue("--warn")];
+  return ["poor", css.getPropertyValue("--dis")];
+}
+
 function stats(c) {
   const el = $("stats");
-  let h = `<div class="stat"><div class="k">${c.kind === "planted" ? "Planted tumour" : "Patient"}</div><div class="v" style="font-size:17px">${c.label}</div><div class="n">${c.kind === "planted" ? c.recipient : c.key}</div></div>`;
-  h += `<div class="stat"><div class="k">Dice</div><div class="v">${c.dice.toFixed(3)}</div><div class="n">${c.kind === "planted" ? "on the planted tumour only" : "1 is a perfect match; test median 0.93"}</div></div>`;
+  const g = grade(c.dice);
+  let h = `<div class="stat"><div class="k">${c.kind === "planted" ? "Planted tumour" : "Patient"}</div><div class="v" style="font-size:17px">${c.label}</div><div class="n">${WHY[c.label] || ""} Scan ID ${c.kind === "planted" ? c.recipient : c.key}.</div></div>`;
+  h += `<div class="stat"><div class="k">Overlap with the doctor</div><div class="v">${c.dice.toFixed(2)}<span class="verdict" style="color:${g[1]}">${g[0]}</span></div><div class="n">0 means no overlap, 1 means a perfect match. A typical patient scores 0.93.${c.kind === "planted" ? " Scored on the planted tumour only." : ""}</div></div>`;
   if (c.kind === "patient") {
     const max = Math.max(c.hi_ml, c.gt_ml) * 1.1, p = (v) => `${(v / max) * 100}%`;
-    h += `<div class="stat"><div class="k">Tumour volume, 90% range</div><div class="v">${c.lo_ml}&ndash;${c.hi_ml} mL</div>
+    h += `<div class="stat"><div class="k">Tumour size, model's range</div><div class="v">${c.lo_ml} to ${c.hi_ml} mL</div>
       <div class="range"><div class="bar"></div><div class="ci" style="left:${p(c.lo_ml)};width:calc(${p(c.hi_ml)} - ${p(c.lo_ml)})"></div><div class="dot" style="left:${p(c.gt_ml)}"></div></div>
-      <div class="n">True ${c.gt_ml} mL (white tick), model ${c.pred_ml} mL. ${c.covered ? "Inside the range." : "Outside the range: one of the 10% the range is allowed to miss."}</div></div>`;
-    h += `<div class="stat"><div class="k">Seed disagreement</div><div class="v">${(c.disagree * 100).toFixed(0)}%</div>
-      <div class="n">of the predicted tumour. ${c.flagged ? '<span class="badge warn">Flagged for review</span> top 10% of test patients.' : '<span class="badge ok">Not flagged</span>'}</div></div>`;
+      <div class="n">The model's best guess is ${c.pred_ml} mL. The real size, from the doctor's outline, is ${c.gt_ml} mL (white tick). ${c.covered ? "The real size is inside the range." : "The real size is outside the range. Ranges like this are built to miss about 1 patient in 10, and this is one of them."}</div></div>`;
+    h += `<div class="stat"><div class="k">How unsure the model is</div><div class="v">${(c.disagree * 100).toFixed(0)}%</div>
+      <div class="n">of the tumour it found is marked unsure (red). ${c.flagged ? '<span class="badge warn">Flagged for review</span> among the 10% most unsure patients, so a doctor should check it.' : '<span class="badge ok">Not flagged</span> the model is fairly sure of itself here.'}</div></div>`;
   } else {
-    h += `<div class="stat"><div class="k">Planted size</div><div class="v">${c.gt_ml} mL</div><div class="n">Donor ${c.donor}, a validation patient the model never trained on.</div></div>`;
+    h += `<div class="stat"><div class="k">Planted size</div><div class="v">${c.gt_ml} mL</div><div class="n">${c.gt_ml <= 5 ? "About a teaspoon." : "About two teaspoons."} Taken from patient ${c.donor}, whose scans the model never saw in training.</div></div>`;
     h += `<p class="note">${c.note}</p>`;
   }
   el.innerHTML = h;
@@ -181,12 +231,12 @@ function stats(c) {
 
 fetch("data.json").then(r => r.json()).then(d => {
   data = d; const nav = $("cases");
-  for (const [kind, title] of [["patient", "Test patients"], ["planted", "Planted tumours"]]) {
+  for (const [kind, title] of [["patient", "Real patients"], ["planted", "Planted tumours (an experiment)"]]) {
     const list = d.cases.filter(c => c.kind === kind); if (!list.length) continue;
     nav.insertAdjacentHTML("beforeend", `<div class="group">${title}</div>`);
     for (const c of list) {
       const b = document.createElement("button"); b.className = "case"; b.type = "button"; b.dataset.key = c.key;
-      b.innerHTML = `<div class="t">${c.label}</div><div class="s">Dice ${c.dice.toFixed(3)} &middot; ${c.gt_ml} mL${c.flagged ? " &middot; flagged" : ""}</div>`;
+      b.innerHTML = `<div class="t">${c.label}</div><div class="s">Overlap ${c.dice.toFixed(2)} (${grade(c.dice)[0]})${c.flagged ? " &middot; flagged" : ""}</div><div class="w">${WHY[c.label] || ""}</div>`;
       b.onclick = () => select(c); nav.appendChild(b);
     }
   }
