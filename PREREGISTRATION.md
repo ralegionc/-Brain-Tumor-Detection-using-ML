@@ -348,3 +348,50 @@ two problems with the recipe above, changed before the full run:
   drawn from every position where the whole tumour fits, found exactly with a correlation of
   the forbidden voxels with the tumour mask. A tumour that fits nowhere is recorded as not
   placed; H21b uses the recipients where both 5 and 80 mL were placed.
+
+## Round 7, written 2026-11-27, before any round 7 code was run
+
+Round 6 found that planted tumours lose Dice fast as they shrink (0.88 at 80 mL, 0.47 at 5 mL),
+that naturally small tumours are harder still than shrunken large ones (H21c failed), and that
+the test set holds almost no small tumours (7 of 117 under 20 mL). Round 7 asks whether
+training on planted small tumours fixes this, and whether a fix learned from shrunken tumours
+carries over to naturally small ones.
+
+**Planted-slice bank.** Recipients and donors are the 314 training patients only (no
+validation or test patient is touched). Donor: the largest 3D tumour component of each training
+patient. For each recipient, 8 plants, each with a donor drawn at random (never the recipient
+itself), placed with the round 6 recipe (rescale, 3 mm ring intensity match, 1-voxel Gaussian
+blend, whole tumour inside the eroded brain, at least 20 mm from the recipient's own tumour).
+From each plant, up to 5 slices touched by the planted tumour are kept, drawn at random; their
+label is the recipient's own tumour plus the planted one. Two banks, built with fixed seeds:
+- **Small bank (arm S):** target volume drawn log-uniformly between 3 and 30 mL.
+- **Native bank (arm N, control):** donors at their own size. This controls for copy-paste as
+  such (more tumour pixels, blend edges) without the shrinking.
+
+**Training.** VGG-16, no gates, Dice + BCE, 24,500 steps, warm-up 300, seeds 0, 1 and 2: the
+round 4 recipe, whose three runs are the baseline (arm B). In arms S and N, each sample of a
+batch is replaced by a random bank slice with probability 0.25; flips and intensity jitter apply
+as usual. Run on Kaggle T4 GPUs like rounds 4 and 5.
+
+**Evaluation.** The 117 test patients, per patient Dice averaged over the three seeds, paired
+bootstrap CIs over patients (95% unless stated). "Small" means the smallest quarter of test
+tumours by true volume (at most 47.3 mL, 30 patients). The round 6 planting grid (validation
+donors, test recipients, same seeds, so the same plants) is rerun for all three arms and all
+three seeds, using the seed-mean Dice per plant.
+
+- H22a, no harm: S minus B overall Dice has a 90% CI lower bound above -0.005.
+- H22b, real small tumours: S minus B Dice on the small quarter is at least +0.01, CI above 0.
+- H22c, size-specific: S minus N Dice on the small quarter has a CI above 0.
+- H22d, planted, the kind it trained on: averaged over 5 and 10 mL plants from naturally large
+  donors, S minus B planted Dice is at least +0.10.
+- H22e, transfer to naturally small tumours: averaged over 5 and 10 mL plants from naturally
+  small donors, S minus B is above 0 (CI above 0, per recipient) and at least half the H22d gain.
+- H22f, false alarms: S minus B mean distant false-positive volume is below +0.5 mL.
+- Descriptive: missed lesions of at least 0.1 mL; S and N against B at every planted size;
+  each seed separately.
+
+My expectation, written down so it can be wrong: H22a, H22d and H22f hold; H22b is the
+uncertain one, because the bank teaches small blended shapes and the test set has few small
+tumours; H22e holds only partly. The planted-grid hypotheses use the same planting recipe for
+training and testing, so a model could learn the blend itself; H22b and H22c, on real tumours,
+are the ones that cannot be gamed that way.
